@@ -47,6 +47,9 @@ footer {
   text-align: center;
   text-transform: uppercase;
 }
+footer > * {  /* Select all footer direct children */
+  white-space: nowrap;  /* Don't break footer components */
+}
 /* ====================== Navigation ====================== */
 nav {
   width: 100%;
