@@ -28,23 +28,25 @@
     <!-- End header -->
 
     <!-- Beginning main -->
-    <main>
+    <main class="details">
       <!-- Beginning map -->
-      <section id="map-container">
+      <section id="map-container" class="details-col">
         <div id="map"></div>
       </section>
       <!-- End map -->
       <!-- Beginning restaurant -->
-      <section id="restaurant-container">
-        <h1 id="restaurant-name"></h1>
-        <img id="restaurant-img">
-        <p id="restaurant-cuisine"></p>
-        <p id="restaurant-address"></p>
-        <table id="restaurant-hours"></table>
+      <section id="restaurant-container" class="details-col info">
+        <h1 id="restaurant-name" class="info-col"></h1>
+        <img id="restaurant-img" class="info-col">
+        <div id="restaurant-other" class="info-col">
+          <p id="restaurant-cuisine"></p>
+          <p id="restaurant-address"></p>
+          <table id="restaurant-hours"></table>
+        </div>
       </section>
       <!-- end restaurant -->
       <!-- Beginning reviews -->
-      <section id="reviews-container">
+      <section id="reviews-container" class="details-col">
         <ul id="reviews-list"></ul>
       </section>
       <!-- End reviews -->
