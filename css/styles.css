@@ -1,38 +1,38 @@
 /* CSS Document */
 
 body,td,th,p{
-	font-family: Arial, Helvetica, sans-serif;
-	font-size: 10pt;
-	color: #333;
-	line-height: 1.5;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10pt;
+  color: #333;
+  line-height: 1.5;
 }
 body {
-	background-color: #fdfdfd;
-	margin: 0;
-	position:relative;
+  background-color: #fdfdfd;
+  margin: 0;
+  position:relative;
 }
 ul, li {
-	font-family: Arial, Helvetica, sans-serif;
-	font-size: 10pt;
-	color: #333;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10pt;
+  color: #333;
 }
 a {
-	color: orange;
-	text-decoration: none;
+  color: orange;
+  text-decoration: none;
 }
 a:hover, a:focus {
-	color: #3397db;
-	text-decoration: none;
+  color: #3397db;
+  text-decoration: none;
 }
 a img{
-	border: none 0px #fff;
+  border: none 0px #fff;
 }
 h1, h2, h3, h4, h5, h6 {
   font-family: Arial, Helvetica, sans-serif;
   margin: 0 0 20px;
 }
 article, aside, canvas, details, figcaption, figure, footer, header, hgroup, menu, nav, section {
-	display: block;
+  display: block;
 }
 main {
   background-color: #f3f3f3;
@@ -66,40 +66,42 @@ nav h1 a {
   height: 1.5em;
 }
 #breadcrumb {
-    padding: 10px 40px 16px;
-    list-style: none;
-    background-color: #eee;
-    font-size: 17px;
-    margin: 0;
-    /*width: calc(50% - 80px);*/
+  padding: 10px 40px 16px;
+  list-style: none;
+  background-color: #eee;
+  font-size: 17px;
+  margin: 0;
+  /*width: calc(50% - 80px);*/
 }
 
 /* Display list items side by side */
 #breadcrumb li {
-    display: inline;
+  display: inline;
 }
 
 /* Add a slash symbol (/) before/behind each list item */
 #breadcrumb li+li:before {
-    padding: 8px;
-    color: black;
-    content: "/\00a0";
+  padding: 8px;
+  color: black;
+  content: "/\00a0";
 }
 
 /* Add a color to all links inside the list */
 #breadcrumb li a {
-    color: #0275d8;
-    text-decoration: none;
+  color: #0275d8;
+  text-decoration: none;
 }
 
 /* Add a color on mouse-over */
 #breadcrumb li a:hover {
-    color: #01447e;
-    text-decoration: underline;
+  color: #01447e;
+  text-decoration: underline;
 }
 /* ====================== Map ====================== */
 #map {
-  height: 400px;
+  height: 100vw;       /* Maintain aspect ratio ... */
+  min-height: 320px;   /* ... with minimum of 320px */  
+  max-height: 525px;   /* ... with maximum of 525px for wide screens. TODO: handle mobile on landscape */
   width: 100%;
   background-color: #ccc;
 }
@@ -109,14 +111,14 @@ nav h1 a {
   /*Let this div be sized by children so they're drawn within it */
   background-color: #3397DB;
   align-items: center;
-  padding-top: .5em;  /* Leave some space from the previous component*/
 }
 .filter-options h2 {
   color: white;
   font-size: 1rem;
   font-weight: normal;
   line-height: 1;
-  margin: 0 20px;
+  margin: 10px;
+  display: inline;
 }
 .filter-options select {
   background-color: white;
@@ -137,6 +139,8 @@ nav h1 a {
   margin: 0;
   padding: 0; /* Use page realestate */
   text-align: center;
+  display: flex;
+  flex-wrap: wrap;
 }
 #restaurants-list li {
   background-color: #fff;
@@ -219,7 +223,7 @@ nav h1 a {
   line-height: 1.1;
 }
 #restaurant-img {
-	width: 100%;
+  width: 100%;
 }
 #restaurant-address {
   font-size: 12pt;
@@ -235,7 +239,7 @@ nav h1 a {
   padding: 2px 0;
   text-align: center;
   text-transform: uppercase;
-	/*width: 100%;*/
+  /*width: 100%;*/
 }
 /*#restaurant-container, #reviews-container {
   border-bottom: 1px solid #d9d9d9;
@@ -266,11 +270,37 @@ nav h1 a {
   overflow: hidden;
   padding: 0 20px 20px;
   position: relative;
-/*  width: 85%;*/
+  /*  width: 85%;*/
 }
 #reviews-list li p {
   margin: 0 0 10px;
 }
 #restaurant-hours td {
   color: #666;
+}
+
+
+/* ====================== Style Breakpoints ====================== */
+@media screen and (max-width: 640px){
+  /* Put filter options label and select elements in same row */
+  .filter-options h2 {
+    display: block;
+  }
+  .filter-options {
+    padding-top: .5em;  /* Leave some space from the previous component*/
+  }
+}
+
+@media screen and (min-width: 640px) and (max-width:960px){
+  /* List restaurants in 2 columns */
+  #restaurants-list li{
+    width: 50%;
+  }
+}
+
+@media screen and (min-width: 960px) {
+  /* List restaurants in 3 columns */
+  #restaurants-list li{
+    width: 33.33%;
+  }
 }
