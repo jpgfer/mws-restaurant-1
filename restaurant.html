@@ -37,7 +37,21 @@
       <!-- Beginning restaurant -->
       <section id="restaurant-container" class="details-col info">
         <h1 id="restaurant-name" class="info-col"></h1>
-        <img id="restaurant-img" class="info-col">
+        <picture id="restaurant-picture" class="info-col">
+          <!-- Less than 400px the image is at most 400px wide -->
+          <source id="less400" media="(max-width: 400px)">
+          <!-- Between 400px and 600px the image is at most 600px wide -->
+          <source id="less600" media="(max-width: 600px)">
+          <!-- Between 600px and 640px the image is at most 640px wide -->
+          <source id="less640" media="(max-width: 640px)">
+          <!-- Between 640px and 800px the image is at most 400px wide (after the 1st breakpoint) -->
+          <source id="less800" media="(max-width: 800px)">
+          <!-- Between 800px and 960px the image is at most 480px wide -->
+          <source id="less960" media="(max-width: 960px)">
+          <!-- Wider than 960px the image is fixed at 400px wide (after the 2nd breakpoint) -->
+          <source id="more960" media="(min-width: 960px)">
+          <img id="restaurant-img" alt="Restaurant image">
+        </picture>
         <div id="restaurant-other" class="info-col">
           <p id="restaurant-cuisine"></p>
           <p id="restaurant-address"></p>

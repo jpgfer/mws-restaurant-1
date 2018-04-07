@@ -240,9 +240,13 @@ nav h1 a {
   text-transform: uppercase;
   line-height: 1.1;
 }
-#restaurant-img {
+#restaurant-picture {
   max-width: 100%;
   height: 75vw; /* Assuming all images are 3:2 aspect ratio */
+}
+#restaurant-picture #restaurant-img {
+  width: 100%;
+  height: 100%;
 }
 #restaurant-address {
   font-size: 12pt;
@@ -319,7 +323,7 @@ nav h1 a {
   #restaurant-other {
     width:50%;
   }
-  #restaurant-img{
+  #restaurant-picture{
     width: 50%;
     height: 37.5vw; /* Half the size of the 3:2 aspect ratio */
   }
@@ -335,13 +339,13 @@ nav h1 a {
     width: 400px;
     order: -2;
   }
-  #restaurant-img{
-    width: 405px;  /* Just a number near 400px that results in a integer height */
-    height: 270px; /* 2/3 the size of the 405px to keep aspect ratio */
+  #restaurant-picture{
+    width: 400px;  /* Just a number near 400px that results in a integer height */
+    height: 300px; /* 2/3 the size of the 405px to keep aspect ratio */
   }
   /* ... and map to the right */
   .details #map-container {
-    width: calc(100% - 405px);
+    width: calc(100% - 400px);
     order: -1;
   }
   /* Make the map the same height as the restaurant info column */
