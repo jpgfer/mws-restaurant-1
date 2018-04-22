@@ -54,6 +54,7 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
 
   const address = document.getElementById('restaurant-address');
   address.innerHTML = restaurant.address;
+  address.setAttribute('aria-label', `Address: ${restaurant.address}`);
   /* Fill in the srcset for each picture source element */
   const less400 = document.getElementById('less400');
   less400.srcset=`/img/${restaurant.id}-400.jpg 1x, /img/${restaurant.id}-600.jpg 1.5x, /img/${restaurant.id}-800.jpg 2x`;
@@ -74,6 +75,7 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
 
   const cuisine = document.getElementById('restaurant-cuisine');
   cuisine.innerHTML = restaurant.cuisine_type;
+  cuisine.setAttribute('aria-label', `${restaurant.cuisine_type} cuisine`);
 
   // fill operating hours
   if (restaurant.operating_hours) {
