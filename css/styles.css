@@ -107,6 +107,10 @@ nav {
   color: #01447e;
   text-decoration: underline;
 }
+/* Enhance the current page link */
+#breadcrumb [aria-current="page"] {
+  font-weight: 700;
+}
 /* ====================== Map ====================== */
 #map {
   height: 100vw;       /* Maintain aspect ratio ... */
