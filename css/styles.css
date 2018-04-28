@@ -146,6 +146,11 @@ nav {
   width: 200px;
 }
 
+/* Improve visual feedback on focused select element */
+.filter-options select:focus {
+  outline: 2px solid orange;
+}
+
 /* ====================== Restaurant Listing ====================== */
 #restaurants-list {
   background-color: #f3f3f3;
@@ -174,7 +179,7 @@ nav {
   min-height: 248px;
   min-width: 100%;
 }
-#restaurants-list li h1 {
+#restaurants-list li h2 {
   color: #f18200;
   font-family: Arial,sans-serif;
   font-size: 14pt;
