@@ -29,7 +29,7 @@ a img{
 }
 h1, h2, h3, h4, h5, h6 {
   font-family: Arial, Helvetica, sans-serif;
-  margin: 0 0 20px;
+  margin: 0;
 }
 article, aside, canvas, details, figcaption, figure, footer, header, hgroup, menu, nav, section {
   display: block;
@@ -50,23 +50,29 @@ footer {
 footer > * {  /* Select all footer direct children */
   white-space: nowrap;  /* Don't break footer components */
 }
-/* ====================== Navigation ====================== */
-nav {
+/* ====================== Header ====================== */
+header {
   width: 100%;
-  /*No height specified: let the h1 size it's parent so the text is always vertically centered */
+  /*No height specified: let the h1 size it's parent so the text is always vertically centered*/ 
   background-color: #252831;
+  text-align: center;
+}
+header h1 {
   text-align:center;
-}
-nav h1 {
-  margin: auto;
-}
-nav h1 a {
   color: #fff;
   font-size: 14pt;
   font-weight: 200;
   letter-spacing: 10px;
   text-transform: uppercase;
   height: 1.5em;
+  display: inline;
+}
+
+/* ====================== Navigation ====================== */
+nav {
+  width: 100%;
+  /*No height specified: let the h1 size it's parent so the text is always vertically centered */
+  background-color: #252831;
 }
 #breadcrumb {
   padding: 10px 40px 16px;
@@ -74,6 +80,7 @@ nav h1 a {
   background-color: #eee;
   font-size: 17px;
   margin: 0;
+  text-align: left;
   /*width: calc(50% - 80px);*/
 }
 
