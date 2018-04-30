@@ -2,6 +2,7 @@ const gulp = require('gulp');
 const sass = require('gulp-sass');
 const autoprefixer = require('gulp-autoprefixer');
 const concat = require('gulp-concat');
+const replace = require('gulp-token-replace');
 
 // Default task
 gulp.task('default', function () {
@@ -16,8 +17,10 @@ gulp.task('default', function () {
  */
 // Copy html files to dist folder
 gulp.task('dist-html', function () {
+  const config = require('./config/config.json');
   return gulp
           .src('*.html')
+          .pipe(replace({global: config}))
           .pipe(gulp.dest('./dist'));
 });
 
