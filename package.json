@@ -1,0 +1,26 @@
+{
+  "name": "mws-restaurant-stage-1",
+  "version": "1.0.0",
+  "description": "Mobile Web Specialist Project 1",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://jpgfer@github.com/jpgfer/mws-restaurant-1.git"
+  },
+  "keywords": [
+    "mws",
+    "udacity"
+  ],
+  "author": "jpgfer",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jpgfer/mws-restaurant-1/issues"
+  },
+  "homepage": "https://github.com/jpgfer/mws-restaurant-1#readme",
+  "devDependencies": {
+    "gulp": "^4.0.0"
+  }
+}
