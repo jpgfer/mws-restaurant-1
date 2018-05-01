@@ -1,43 +1,50 @@
+const cacheName = 'mws-static-v1';
+
 /**
  * Add listener to the 'install' event
  */
 self.addEventListener('install', function (event) {
   event.waitUntil(
-    caches.open('mws-static-v1')
+    caches.open(cacheName)
     .then(function (cache) {
       return cache.addAll([
         '/',
+        'restaurant.html',
+        'favicon.ico',
         'css/styles.css',
         'js/main.js',
-        'js/dbhelper.js',
-        'data/restaurants.json'
+        'js/restaurant_info.js',
+        'js/dbhelper.js'
       ]);
     })
     );
 });
 /**
  * Add listener to the 'fetch' event
+ * TODO: handle errors with 'catch'
  */
 self.addEventListener('fetch', function (event) {
+  // console.log(event.request);
   event.respondWith(
-    // Get the response from cache...
-    caches.match(event.request)
-    .then(function (response) {
-      // If there's a cached response...
-      if (response) {
-        // ... return it
-        return response;
-      }
-      // ...else fetch it
-      return fetch(event.request)
-        .then(function (response) {
-          if (response.status === 404) {
-            return new Response('Whoops, not found.');
+    // Open the cache
+    caches.open(cacheName)
+    .then((cache) => {
+      // Get response for given request
+      return cache.match(event.request)
+        .then((response) => {
+          // YES: there's a response cached so return it
+          if (response) {
+            return response;
           }
-          return response;
-        })
-        .catch(function (error) {
-          return new Response('Error requesting.');
+          // NO: fetch a response
+          return fetch(event.request)
+            .then((response) => {
+              // Cache response only if status OK
+              if (response.status === 200) {
+                cache.put(event.request, response.clone());
+              }
+              return response;
+            });
         });
     })
     );
