@@ -4,6 +4,10 @@ const cacheName = 'mws-static-v1';
  * Add listener to the 'install' event
  */
 self.addEventListener('install', function (event) {
+  console.log('Install Event');
+  console.log(event);
+  // Take over older versions that might still be active
+  self.skipWaiting();
   event.waitUntil(
     caches.open(cacheName)
     .then(function (cache) {
@@ -19,12 +23,24 @@ self.addEventListener('install', function (event) {
     })
     );
 });
+
+/**
+ * Add listener to the 'fetch' event
+ * TODO: handle errors with 'catch'
+ */
+self.addEventListener('activate', function (event) {
+  console.log('Activate Event');
+  console.log(event);
+  // Don't wait for a page reload to take control of clients
+  event.waitUntil(clients.claim());
+});
+
 /**
  * Add listener to the 'fetch' event
  * TODO: handle errors with 'catch'
  */
 self.addEventListener('fetch', function (event) {
-  // console.log(event.request);
+  console.log(event.request);
   event.respondWith(
     // Open the cache
     caches.open(cacheName)
