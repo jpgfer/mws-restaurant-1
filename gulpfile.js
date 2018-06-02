@@ -47,11 +47,11 @@ gulp.task('dist-js', function () {
     .src('js/**/*.js')
     .pipe(gulp.dest('./dist/js'));
 });
-// Copy service worker to dist folder
+// Copy service worker (and others) to dist folder
 gulp.task('dist-sw', function () {
-  // Copy service worker js
+  // Copy service worker js (and others)
   return gulp
-    .src('sw.js')
+    .src(['sw.js', 'favicon.ico', 'manifest.json'])
     .pipe(gulp.dest('./dist'));
 });
 
@@ -84,7 +84,7 @@ gulp.task('watch', function () {
   gulp.watch('*.html', gulp.parallel('dist-html'));
   gulp.watch('css/**/*.css', gulp.parallel('dist-css'));
   gulp.watch('js/**/*.js', gulp.parallel('dist-js'));
-  gulp.watch('sw.js', gulp.parallel('dist-sw'));
+  gulp.watch(['sw.js', 'favicon.ico', 'manifest.json'], gulp.parallel('dist-sw'));
 });
 
 /**
