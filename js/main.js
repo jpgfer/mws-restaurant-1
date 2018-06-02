@@ -56,6 +56,40 @@ fillNeighborhoodsHTML = (neighborhoods = self.neighborhoods) => {
 };
 
 /**
+ * Lazily load images using IntersectionObserver
+ * Source: https://developers.google.com/web/fundamentals/performance/lazy-loading-guidance/images-and-video/
+ */
+lazyLoadImages = () => {
+  var lazyImages = [].slice.call(document.querySelectorAll("img.lazy"));
+
+  // If image IntersectionObserver is available...
+  if ("IntersectionObserver" in window) {
+    // Create a new IntersectionObserver (io) that...
+    let lazyImageObserver = new IntersectionObserver(function(entries, observer) {
+      // ... for each observed entry...
+      entries.forEach(function(entry) {
+        // ... checks if it's intersecting the viewport...
+        if (entry.isIntersecting) {
+          // ... and if so, update the src and srcset information with the ones stored in dataset
+          let lazyImage = entry.target;
+          lazyImage.src = lazyImage.dataset.src;
+//          lazyImage.srcset = lazyImage.dataset.srcset;
+          lazyImage.classList.remove("lazy");
+          lazyImageObserver.unobserve(lazyImage);
+        }
+      });
+    });
+
+    lazyImages.forEach(function(lazyImage) {
+      lazyImageObserver.observe(lazyImage);
+    });
+  } else {
+    // Possibly fall back to a more compatible method here
+    console.log('Lazy image loading not available.');
+  }
+};
+
+/**
  * Fetch all cuisines and set their HTML.
  */
 fetchCuisines = () => {
@@ -118,8 +152,9 @@ updateRestaurants = () => {
     } else {
       resetRestaurants(restaurants);
       fillRestaurantsHTML();
+      lazyLoadImages();
     }
-  })
+  });
 };
 
 /**
@@ -162,8 +197,9 @@ createRestaurantHTML = (restaurant) => {
 
   const picture = document.createElement('picture');
   const image = document.createElement('img');
-  image.className = 'restaurant-img';
-  image.src = DBHelper.imageUrlForRestaurant(restaurant);
+  image.className = 'restaurant-img lazy';
+  image.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='; // 1x1 transparent png pixel
+  image.dataset.src = DBHelper.imageUrlForRestaurant(restaurant);
   image.alt = `${restaurant.name} photograph`;
   picture.append(image);
   article.append(picture);
