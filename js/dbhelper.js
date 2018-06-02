@@ -30,24 +30,24 @@ class DBHelper {
    */
   static fetchRestaurantsData(restaurantsDataUrl, callback) {
     fetch(restaurantsDataUrl)
-      .then(function (response) {
-        // If response is OK...
-        if (response.status === 200) {
-          // ... return the json promise
-          return response.json();
-        } else {
-          // ... else throw an error to be handled in the catch
-          throw new Error(`Fetch failed: ${response.status} ${response.statusText}`);
-        }
-      })
-      .then(function (restaurants) {
-        // Signal back the restaurants data
-        callback(null, restaurants);
-      })
-      .catch(function (error) {
-        // Signal back a fetch error
-        callback(error, null);
-      });
+            .then(function (response) {
+              // If response is OK...
+              if (response.status === 200) {
+                // ... return the json promise
+                return response.json();
+              } else {
+                // ... else throw an error to be handled in the catch
+                throw new Error(`Fetch failed: ${response.status} ${response.statusText}`);
+              }
+            })
+            .then(function (restaurants) {
+              // Signal back the restaurants data
+              callback(null, restaurants);
+            })
+            .catch(function (error) {
+              // Signal back a fetch error
+              callback(error, null);
+            });
   }
 
   /**
@@ -159,13 +159,20 @@ class DBHelper {
       if (error) {
         callback(error, null);
       } else {
-        // Get all neighborhoods from all restaurants
-        const neighborhoods = restaurants.map((v, i) => restaurants[i].neighborhood)
-        // Remove duplicates from neighborhoods
-        const uniqueNeighborhoods = neighborhoods.filter((v, i) => neighborhoods.indexOf(v) == i)
-        callback(null, uniqueNeighborhoods);
+        callback(null, DBHelper.filterNeighborhoods(restaurants));
       }
     });
+  }
+
+  /**
+   * Filter all neighborhoods to return a unique neighborhood array
+   */
+  static filterNeighborhoods(restaurants) {
+    // Get all neighborhoods from all restaurants
+    const neighborhoods = restaurants.map((v, i) => restaurants[i].neighborhood);
+    // Remove duplicates from neighborhoods
+    const uniqueNeighborhoods = neighborhoods.filter((v, i) => neighborhoods.indexOf(v) == i);
+    return uniqueNeighborhoods;
   }
 
   /**
@@ -177,13 +184,20 @@ class DBHelper {
       if (error) {
         callback(error, null);
       } else {
-        // Get all cuisines from all restaurants
-        const cuisines = restaurants.map((v, i) => restaurants[i].cuisine_type)
-        // Remove duplicates from cuisines
-        const uniqueCuisines = cuisines.filter((v, i) => cuisines.indexOf(v) == i)
-        callback(null, uniqueCuisines);
+        callback(null, DBHelper.filterCuisines(restaurants));
       }
     });
+  }
+
+  /**
+   * Filter all cuisines to return a unique cuisines array
+   */
+  static filterCuisines(restaurants) {
+    // Get all cuisines from all restaurants
+    const cuisines = restaurants.map((v, i) => restaurants[i].cuisine_type);
+    // Remove duplicates from cuisines
+    const uniqueCuisines = cuisines.filter((v, i) => cuisines.indexOf(v) == i);
+    return uniqueCuisines;
   }
 
   /**
@@ -275,7 +289,7 @@ class DBHelper {
   static selectRestaurantsData(callback, id) {
     console.info(`Loading restaurant data from database.`);
     DBHelper.doInDatabase('readonly',
-      (transaction) => {
+            (transaction) => {
       // Get the store
       const store = transaction.objectStore(RESTAURANT_STORE);
       const withoutId = id === undefined || id === null;
@@ -288,9 +302,9 @@ class DBHelper {
         callback(null, successEvent.target.result);
       };
     }, (successMessage) => {
-      console.info('Restaurant data loaded from database.');
+      console.info('Restaurant data query successfull.');
     }, (errorMessage) => {
-      console.info(`Error loading restaurant data from database: ${errorMessage}`);
+      console.info(`Error querying restaurant data from database: ${errorMessage}`);
     }
     );
 
@@ -304,7 +318,7 @@ class DBHelper {
   static insertRestaurantData(restaurantData) {
     console.info(`Inserting restaurant data into database.`);
     DBHelper.doInDatabase('readwrite',
-      (transaction) => {
+            (transaction) => {
       const store = transaction.objectStore(RESTAURANT_STORE);
       const insertRestaurant = function (restaurant) {
         const request = store.put(restaurant);

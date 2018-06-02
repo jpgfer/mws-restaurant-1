@@ -1,6 +1,4 @@
-let restaurants,
-        neighborhoods,
-        cuisines;
+let restaurants, neighborhoods, cuisines;
 var map;
 var markers = [];
 
@@ -9,8 +7,9 @@ var markers = [];
  */
 document.addEventListener('DOMContentLoaded', (event) => {
   registerServiceWorker();
-  fetchNeighborhoods();
-  fetchCuisines();
+  // No longer fetched but filled when the restaurants are retrieved for the first time in initMap function
+  //  fetchNeighborhoods();
+  //  fetchCuisines();
 });
 
 /**
@@ -24,9 +23,17 @@ registerServiceWorker = () => {
   }
   // Register service worker
   navigator.serviceWorker.register('./sw.js')
-          .then(()=> console.log('Service Worker registered.'))
-          .catch((error)=> console.log('Service Worker registration failed.', error));
+          .then(() => console.log('Service Worker registered.'))
+          .catch((error) => console.log('Service Worker registration failed.', error));
 };
+
+/**
+ * Setup restaurants information
+ */
+restaurantsSetup = (restaurants) => {
+  fillNeighborhoodsHTML(DBHelper.filterNeighborhoods(restaurants));
+  fillCuisinesHTML(DBHelper.filterCuisines(restaurants));
+}
 
 /**
  * Fetch all neighborhoods and set their HTML.
@@ -53,40 +60,6 @@ fillNeighborhoodsHTML = (neighborhoods = self.neighborhoods) => {
     option.value = neighborhood;
     select.append(option);
   });
-};
-
-/**
- * Lazily load images using IntersectionObserver
- * Source: https://developers.google.com/web/fundamentals/performance/lazy-loading-guidance/images-and-video/
- */
-lazyLoadImages = () => {
-  var lazyImages = [].slice.call(document.querySelectorAll("img.lazy"));
-
-  // If image IntersectionObserver is available...
-  if ("IntersectionObserver" in window) {
-    // Create a new IntersectionObserver (io) that...
-    let lazyImageObserver = new IntersectionObserver(function(entries, observer) {
-      // ... for each observed entry...
-      entries.forEach(function(entry) {
-        // ... checks if it's intersecting the viewport...
-        if (entry.isIntersecting) {
-          // ... and if so, update the src and srcset information with the ones stored in dataset
-          let lazyImage = entry.target;
-          lazyImage.src = lazyImage.dataset.src;
-//          lazyImage.srcset = lazyImage.dataset.srcset;
-          lazyImage.classList.remove("lazy");
-          lazyImageObserver.unobserve(lazyImage);
-        }
-      });
-    });
-
-    lazyImages.forEach(function(lazyImage) {
-      lazyImageObserver.observe(lazyImage);
-    });
-  } else {
-    // Possibly fall back to a more compatible method here
-    console.log('Lazy image loading not available.');
-  }
 };
 
 /**
@@ -118,6 +91,40 @@ fillCuisinesHTML = (cuisines = self.cuisines) => {
 };
 
 /**
+ * Lazily load images using IntersectionObserver
+ * Source: https://developers.google.com/web/fundamentals/performance/lazy-loading-guidance/images-and-video/
+ */
+lazyLoadImages = () => {
+  var lazyImages = [].slice.call(document.querySelectorAll("img.lazy"));
+
+  // If image IntersectionObserver is available...
+  if ("IntersectionObserver" in window) {
+    // Create a new IntersectionObserver (io) that...
+    let lazyImageObserver = new IntersectionObserver(function (entries, observer) {
+      // ... for each observed entry...
+      entries.forEach(function (entry) {
+        // ... checks if it's intersecting the viewport...
+        if (entry.isIntersecting) {
+          // ... and if so, update the src and srcset information with the ones stored in dataset
+          let lazyImage = entry.target;
+          lazyImage.src = lazyImage.dataset.src;
+//          lazyImage.srcset = lazyImage.dataset.srcset;
+          lazyImage.classList.remove("lazy");
+          lazyImageObserver.unobserve(lazyImage);
+        }
+      });
+    });
+
+    lazyImages.forEach(function (lazyImage) {
+      lazyImageObserver.observe(lazyImage);
+    });
+  } else {
+    // Possibly fall back to a more compatible method here
+    console.log('Lazy image loading not available.');
+  }
+};
+
+/**
  * Initialize Google map, called from HTML.
  */
 window.initMap = () => {
@@ -130,13 +137,13 @@ window.initMap = () => {
     center: loc,
     scrollwheel: false
   });
-  updateRestaurants();
+  updateRestaurants(restaurantsSetup);
 };
 
 /**
  * Update page and map for current restaurants.
  */
-updateRestaurants = () => {
+updateRestaurants = (restaurantsSetupHandler) => {
   const cSelect = document.getElementById('cuisines-select');
   const nSelect = document.getElementById('neighborhoods-select');
 
@@ -153,6 +160,10 @@ updateRestaurants = () => {
       resetRestaurants(restaurants);
       fillRestaurantsHTML();
       lazyLoadImages();
+      // If there's a restaurant's setup handler
+      if (restaurantsSetupHandler) {
+        restaurantsSetupHandler(restaurants);
+      }
     }
   });
 };
@@ -198,7 +209,7 @@ createRestaurantHTML = (restaurant) => {
   const picture = document.createElement('picture');
   const image = document.createElement('img');
   image.className = 'restaurant-img lazy';
-  image.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='; // 1x1 transparent png pixel
+  image.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='; // 1x1 transparent png pixel (provided by: http://png-pixel.com/)
   image.dataset.src = DBHelper.imageUrlForRestaurant(restaurant);
   image.alt = `${restaurant.name} photograph`;
   picture.append(image);
