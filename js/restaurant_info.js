@@ -57,17 +57,17 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
   address.setAttribute('aria-label', `Address: ${restaurant.address}`);
   /* Fill in the srcset for each picture source element */
   const less400 = document.getElementById('less400');
-  less400.srcset=`/img/${restaurant.id}-400.jpg 1x, /img/${restaurant.id}-600.jpg 1.5x, /img/${restaurant.id}-800.jpg 2x`;
+  less400.srcset=`/img/${restaurant.id}-400.webp 1x, /img/${restaurant.id}-600.webp 1.5x, /img/${restaurant.id}-800.webp 2x`;
   const less600 = document.getElementById('less600');
-  less600.srcset=`/img/${restaurant.id}-600.jpg 1x, /img/${restaurant.id}-800.jpg 1.5x`;
+  less600.srcset=`/img/${restaurant.id}-600.webp 1x, /img/${restaurant.id}-800.webp 1.5x`;
   const less640 = document.getElementById('less640');
-  less640.srcset=`/img/${restaurant.id}-800.jpg 1x`;
+  less640.srcset=`/img/${restaurant.id}-800.webp 1x`;
   const less800 = document.getElementById('less800');
-  less800.srcset=`/img/${restaurant.id}-400.jpg 1x, /img/${restaurant.id}-600.jpg 1.5x, /img/${restaurant.id}-800.jpg 2x`;
+  less800.srcset=`/img/${restaurant.id}-400.webp 1x, /img/${restaurant.id}-600.webp 1.5x, /img/${restaurant.id}-800.webp 2x`;
   const less960 = document.getElementById('less960');
-  less960.srcset=`/img/${restaurant.id}-600.jpg 1x, /img/${restaurant.id}-800.jpg 1.5x`;
+  less960.srcset=`/img/${restaurant.id}-600.webp 1x, /img/${restaurant.id}-800.webp 1.5x`;
   const more960 = document.getElementById('more960');
-  more960.srcset=`/img/${restaurant.id}-400.jpg 1x, /img/${restaurant.id}-600.jpg 1.5x, /img/${restaurant.id}-800.jpg 2x`;
+  more960.srcset=`/img/${restaurant.id}-400.webp 1x, /img/${restaurant.id}-600.webp 1.5x, /img/${restaurant.id}-800.webp 2x`;
   
   const image = document.getElementById('restaurant-img');
   image.className = 'restaurant-img';
