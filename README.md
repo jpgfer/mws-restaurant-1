@@ -1,28 +1,28 @@
-# Mobile Web Specialist Certification Course
+# My Mobile Web Specialist Certification Course Project
 ---
 #### _Three Stage Course Material Project - Restaurant Reviews_
 
+For the **Restaurant Reviews** projects, the student will incrementally convert a static webpage to a mobile-ready web application. 
+
+1. Part 1: https://github.com/udacity/mws-restaurant-stage-1
+2. Part 2: https://github.com/udacity/mws-restaurant-stage-2
+3. Part 3: https://github.com/udacity/mws-restaurant-stage-3
+
 ## Project Overview: Stage 1
 
-For the **Restaurant Reviews** projects, you will incrementally convert a static webpage to a mobile-ready web application. In **Stage One**, you will take a static design that lacks accessibility and convert the design to be responsive on different sized displays and accessible for screen reader use. You will also add a service worker to begin the process of creating a seamless offline experience for your users.
+In **Stage One**, the student will take a static design that lacks accessibility and convert the design to be responsive on different sized displays and accessible for screen reader use. The student will also add a service worker to begin the process of creating a seamless offline experience for the users.
 
-### Specification
+**Status**: DONE
 
-You have been provided the code for a restaurant reviews website. The code has a lot of issues. It’s barely usable on a desktop browser, much less a mobile device. It also doesn’t include any standard accessibility features, and it doesn’t work offline at all. Your job is to update the code to resolve these issues while still maintaining the included functionality. 
+## Project Overview: Stage 2
 
-### What do I do from here?
+ In **Stage Two**, the student will take the responsive, accessible design built in **Stage One** and connect it to an external server. The student will begin by using asynchronous JavaScript to request JSON data from the server. The student will store data received from the server in an offline database using IndexedDB, which will create an app shell architecture. Finally, the student will work to optimize the site to meet performance benchmarks, which the student will test using [Lighthouse](https://developers.google.com/web/tools/lighthouse/).
 
-1. In this folder, start up a simple HTTP server to serve up the site files on your local computer. Python has some simple tools to do this, and you don't even need to know Python. For most people, it's already installed on your computer. 
+**Status**: DONE
 
-In a terminal, check the version of Python you have: `python -V`. If you have Python 2.x, spin up the server with `python -m SimpleHTTPServer 8000` (or some other port, if port 8000 is already in use.) For Python 3.x, you can use `python3 -m http.server 8000`. If you don't have Python installed, navigate to Python's [website](https://www.python.org/) to download and install the software.
+## Project Overview: Stage 3
 
-2. With your server running, visit the site: `http://localhost:8000`, and look around for a bit to see what the current experience looks like.
-3. Explore the provided code, and make start making a plan to implement the required features in three areas: responsive design, accessibility and offline use.
-4. Write code to implement the updates to get this site on its way to being a mobile-ready website.
+ In **Stage Three**, you will take the connected application built in **Stage One** and **Stage Two** and add additional functionality. The student will add a form to allow users to create their own reviews. If the app is offline, the form will defer updating to the remote database until a connection is established. Finally, the student will work to optimize the site to meet even stricter performance benchmarks than the previous project, and test again using [Lighthouse](https://developers.google.com/web/tools/lighthouse/).
 
-### Note about ES6
-
-Most of the code in this project has been written to the ES6 JavaScript specification for compatibility with modern web browsers and future proofing JavaScript code. As much as possible, try to maintain use of ES6 in any additional JavaScript you write. 
-
-
+**Status**: under way
 
