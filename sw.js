@@ -1,5 +1,9 @@
 const cacheName = 'mws-static-v1';
-
+/**
+ * Array of request paths that shall not be cached or are already cached on setup
+ * @type Array
+ */
+const DO_NOT_CACHE = ['/restaurants.*', '/reviews.*', '/restaurant.html']
 /**
  * Add listener to the 'install' event
  */
@@ -41,27 +45,48 @@ self.addEventListener('activate', function (event) {
  */
 self.addEventListener('fetch', function (event) {
   console.log(event.request);
-  event.respondWith(
-    // Open the cache
-    caches.open(cacheName)
-    .then((cache) => {
-      // Get response for given request
-      return cache.match(event.request)
-        .then((response) => {
-          // YES: there's a response cached so return it
-          if (response) {
-            return response;
-          }
-          // NO: fetch a response
-          return fetch(event.request)
-            .then((response) => {
-              // Cache response only if status OK
-              if (response.status === 200) {
-                cache.put(event.request, response.clone());
-              }
+  if (shallNotCache(event.request.url)) {
+    // Just forward it
+    return fetch(event.request).then((response) => {
+      return response;
+    });
+  } else {
+    // Check for cache
+    event.respondWith(
+      // Open the cache
+      caches.open(cacheName)
+      .then((cache) => {
+        // Get response for given request
+        return cache.match(event.request)
+          .then((response) => {
+            // YES: there's a response cached so return it
+            if (response) {
               return response;
-            });
-        });
-    })
-    );
+            }
+            // NO: fetch a response
+            return fetch(event.request)
+              .then((response) => {
+                // Cache response only if status OK
+                if (response.status === 200) {
+                  cache.put(event.request, response.clone());
+                }
+                return response;
+              });
+          });
+      })
+      );
+  }
 });
+
+/**
+ * Check if the given URL shall not be cached
+ * @param {type} url
+ * @returns {Boolean}
+ */
+function shallNotCache(url) {
+  const path = new URL(url).pathname;
+  return DO_NOT_CACHE.some(
+    (noCachePath) => {
+    return  path.match(noCachePath);
+  });
+}
