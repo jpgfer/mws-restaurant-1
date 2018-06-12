@@ -4,12 +4,13 @@ var markers = [];
 
 /**
  * Fetch neighborhoods and cuisines as soon as the page is loaded.
+ * TODO: Fill the select elements only when they are expanded
  */
 document.addEventListener('DOMContentLoaded', (event) => {
   registerServiceWorker();
   // No longer fetched but filled when the restaurants are retrieved for the first time in initMap function
-  //  fetchNeighborhoods();
-  //  fetchCuisines();
+  //  getNeighborhoods();
+  //  getCuisines();
 });
 
 /**
@@ -37,9 +38,10 @@ restaurantsSetup = (restaurants) => {
 
 /**
  * Fetch all neighborhoods and set their HTML.
+ * @deprecated no longer invoked directly
  */
-fetchNeighborhoods = () => {
-  DBHelper.fetchNeighborhoods((error, neighborhoods) => {
+getNeighborhoods = () => {
+  DBHelper.getNeighborhoods((error, neighborhoods) => {
     if (error) { // Got an error
       console.error(error);
     } else {
@@ -64,9 +66,10 @@ fillNeighborhoodsHTML = (neighborhoods = self.neighborhoods) => {
 
 /**
  * Fetch all cuisines and set their HTML.
+ * @deprecated no longer invoked directly
  */
-fetchCuisines = () => {
-  DBHelper.fetchCuisines((error, cuisines) => {
+getCuisines = () => {
+  DBHelper.getCuisines((error, cuisines) => {
     if (error) { // Got an error!
       console.error(error);
     } else {
@@ -153,7 +156,7 @@ updateRestaurants = (restaurantsSetupHandler) => {
   const cuisine = cSelect[cIndex].value;
   const neighborhood = nSelect[nIndex].value;
 
-  DBHelper.fetchRestaurantByCuisineAndNeighborhood(cuisine, neighborhood, (error, restaurants) => {
+  DBHelper.getRestaurantByCuisineAndNeighborhood(cuisine, neighborhood, (error, restaurants) => {
     if (error) { // Got an error!
       console.error(error);
     } else {

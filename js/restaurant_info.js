@@ -33,7 +33,7 @@ fetchRestaurantFromURL = (callback) => {
     error = 'No restaurant id in URL';
     callback(error, null);
   } else {
-    DBHelper.fetchRestaurantById(id, (error, restaurant) => {
+    DBHelper.getRestaurantById(id, (error, restaurant) => {
       self.restaurant = restaurant;
       if (!restaurant) {
         console.error(error);
@@ -82,7 +82,14 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
     fillRestaurantHoursHTML();
   }
   // fill reviews
-  fillReviewsHTML();
+  DBHelper.getReviewsByRestaurantId(restaurant.id, (error, reviews)=>{
+    if (error) { // Got an error!
+      console.error(error);
+    } else {
+      fillReviewsHTML(reviews);
+    }
+  });
+  
 };
 
 /**
@@ -137,7 +144,7 @@ createReviewHTML = (review) => {
   article.appendChild(name);
 
   const date = document.createElement('p');
-  date.innerHTML = review.date;
+  date.innerHTML = new Date(review.updatedAt).toLocaleString();
   article.appendChild(date);
 
   const rating = document.createElement('p');
