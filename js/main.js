@@ -230,8 +230,36 @@ createRestaurantHTML = (restaurant) => {
   more.setAttribute('aria-label', `View ${restaurant.name} details`);
   article.append(more);
 
+  const favorite = document.createElement('button');
+  favorite.innerHTML = '★';
+  favorite.className = 'favorite';
+  favorite.type = 'button';
+  favorite.title = 'Toggle favorite';
+  favorite.onclick = toggleFavorite(restaurant.id);
+  favorite.setAttribute('aria-checked', restaurant.is_favorite);
+  article.append(favorite);
+
   li.append(article);
   return li;
+};
+
+/**
+ * Return a function to toggle the restaurant favorite status
+ * @param {type} restaurantId the restaurantId
+ * @returns {undefined}
+ */
+toggleFavorite = (restaurantId) => {
+  return (event) => {
+    const newState = !(event.target.getAttribute('aria-checked') === 'true');
+    DBHelper.setFavorite(restaurantId, newState, (error, restaurant) => {
+      if (error) { // Got an error!
+        console.error(error);
+      } else {
+        event.target.setAttribute('aria-checked', newState);
+      }
+    }
+    );
+  };
 };
 
 /**

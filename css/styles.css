@@ -207,6 +207,29 @@ nav {
   text-transform: uppercase;
 }
 
+/* 
+ * Favorite button 
+ */
+/* Normal state (not favorite) */
+.favorite {
+  background: none;
+  border: none;
+  color: black;
+  font-size: 2em;
+  padding: 0px 10px 0px;
+  display: inline-block;
+  transform: translateY(5px);
+}
+/* On hover state */
+.favorite:hover{
+  /*text-shadow: 0px 0px 10px #054d8c;*/
+  transform: translateY(5px) scale(1.5,1.5);
+}
+/* Favorite state */
+.favorite[aria-checked=true]{
+  color: gold;
+}
+
 /* ====================== Restaurant Details ====================== */
 /* 
   Flex containers to hold:

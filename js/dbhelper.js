@@ -350,4 +350,33 @@ class DBHelper {
     });
   }
 
+  /**
+   * Set the favorite flag of the restaurant
+   * @param {number} restaurantId the restaurant id
+   * @param {boolean} isFavorite flag indicating if restaurant is to be favorite/unfavorite
+   * @param {function} callback invoked after favorite flag is set 
+   * @returns {undefined}
+   */
+  static setFavorite(restaurantId, isFavorite, callback) {
+    fetch(`${DBHelper.DATABASE_URL}/${restaurantId}/?is_favorite=${isFavorite}`, {method: 'PUT'})
+            .then(function (response) {
+              // If response is OK...
+              if (response.status === 200) {
+                // ... return the json promise
+                return response.json();
+              } else {
+                // ... else throw an error to be handled in the catch
+                throw new Error(`Error setting favorite for restaurant with id=${restaurantId}: ${response.status} ${response.statusText}`);
+              }
+            })
+            .then(function (restaurant) {
+              // Signal back the restaurants data
+              callback(null, restaurant);
+            })
+            .catch(function (error) {
+              // Signal back a fetch error
+              callback(error, null);
+            });
+  }
+
 }
