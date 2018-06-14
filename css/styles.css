@@ -233,7 +233,7 @@ nav {
 /*
  * Add review
  */
-#add-form label {
+form label {
   display: block;
 }
 

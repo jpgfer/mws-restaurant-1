@@ -510,7 +510,7 @@ class DBHelper {
   }
 
   /**
-   * 
+   * Add restaurant review
    * @param {number} restaurantId
    * @param {string} name
    * @param {number} rating
@@ -521,7 +521,7 @@ class DBHelper {
     const review = {
       restaurant_id: restaurantId,
       name: name,
-      rating: +rating,  // the '+' converts rating string to number
+      rating: +rating, // the '+' converts rating string to number
       comments: comment
     };
     fetch(`${DBHelper.DATABASE_URL}reviews/`, {
@@ -539,6 +539,47 @@ class DBHelper {
         } else {
           // ... else throw an error to be handled in the catch
           throw new Error(`Error adding review for restaurant with id=${restaurantId}: ${response.status} ${response.statusText}`);
+        }
+      })
+      .then(function (review) {
+        // Signal back the restaurants data
+        callback(null, review);
+      })
+      .catch(function (error) {
+        // Signal back a fetch error
+        callback(error, null);
+      });
+  }
+  
+  /**
+   * Edit restaurant review
+   * @param {number} reviewId
+   * @param {string} name
+   * @param {number} rating
+   * @param {string} comment
+   * @param {function(error, review)} callback
+   */
+  static editReview(reviewId, name, rating, comment, callback) {
+    const review = {
+      name: name,
+      rating: +rating, // the '+' converts rating string to number
+      comments: comment
+    };
+    fetch(`${DBHelper.DATABASE_URL}reviews/${reviewId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(review)
+    })
+      .then(function (response) {
+        // If response is OK...
+        if (response.status === 200) {
+          // ... return the json promise
+          return response.json();
+        } else {
+          // ... else throw an error to be handled in the catch
+          throw new Error(`Error editing review with id=${reviewId}: ${response.status} ${response.statusText}`);
         }
       })
       .then(function (review) {
