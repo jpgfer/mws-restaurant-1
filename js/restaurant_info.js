@@ -189,6 +189,10 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
     if (error) { // Got an error!
       console.error(error);
     } else {
+      // Sort reviews by date (descending order, ie, most recent first)
+      reviews = reviews.sort((a, b) => {
+        return new Date(b.updatedAt).getTime()-new Date(a.updatedAt).getTime();
+      });
       fillReviewsHTML(reviews);
     }
   });
