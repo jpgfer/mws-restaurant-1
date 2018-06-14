@@ -63,6 +63,18 @@
       <!-- Beginning reviews -->
       <section id="reviews-container" class="details-col" tabindex="0">
         <h2>Reviews</h2>
+        <!-- Add review -->
+        <div> 
+          <form id="add-form" onsubmit="return addReview();" hidden>
+            <label>Name:<input id="add-name" type="text" name="user" placeholder="Your name" required value="1"></label>
+            <label>Rating:<input id="add-rating" type="number" name="rating" min="1" step="1" max="5" placeholder="1 to 5" required value="1"></label>
+            <label>Comment:<textarea id="add-comment" name="comment" rows="5" placeholder="Your comments" required>1</textarea></label>
+            <p id="add-error" hidden></p>
+            <button type="submit" id="submit-button">Submit review</button>
+          </form>
+          <button id="add-button" onclick="toggleAddButtonState()">Add review</button>
+        </div>
+        <!-- Reviews list -->
         <ul id="reviews-list"></ul>
       </section>
       <!-- End reviews -->

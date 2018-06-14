@@ -230,6 +230,18 @@ nav {
   color: gold;
 }
 
+/*
+ * Add review
+ */
+#add-form label {
+  display: block;
+}
+
+#add-error {
+  background-color: #ffffcc;
+  color: red;
+}
+
 /* ====================== Restaurant Details ====================== */
 /* 
   Flex containers to hold:

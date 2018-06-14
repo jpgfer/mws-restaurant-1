@@ -40,24 +40,24 @@ class DBHelper {
    */
   static fetchDataFromUrl(dataUrl, callback) {
     fetch(dataUrl)
-            .then(function (response) {
-              // If response is OK...
-              if (response.status === 200) {
-                // ... return the json promise
-                return response.json();
-              } else {
-                // ... else throw an error to be handled in the catch
-                throw new Error(`Fetch failed: ${response.status} ${response.statusText}`);
-              }
-            })
-            .then(function (applicationData) {
-              // Signal back the restaurants data
-              callback(null, applicationData);
-            })
-            .catch(function (error) {
-              // Signal back a fetch error
-              callback(error, null);
-            });
+      .then(function (response) {
+        // If response is OK...
+        if (response.status === 200) {
+          // ... return the json promise
+          return response.json();
+        } else {
+          // ... else throw an error to be handled in the catch
+          throw new Error(`Fetch failed: ${response.status} ${response.statusText}`);
+        }
+      })
+      .then(function (applicationData) {
+        // Signal back the restaurants data
+        callback(null, applicationData);
+      })
+      .catch(function (error) {
+        // Signal back a fetch error
+        callback(error, null);
+      });
   }
 
   /**
@@ -336,7 +336,7 @@ class DBHelper {
   static selectRestaurants(callback, id) {
     console.info(`Loading restaurant data from database.`);
     DBHelper.doInDatabase('readonly', [RESTAURANT_STORE],
-            (transaction) => {
+      (transaction) => {
       // Get the store
       const store = transaction.objectStore(RESTAURANT_STORE);
       const withoutId = id === undefined || id === null;
@@ -364,7 +364,7 @@ class DBHelper {
   static insertRestaurants(restaurants) {
     console.info(`Inserting restaurant data into database.`);
     DBHelper.doInDatabase('readwrite', [RESTAURANT_STORE],
-            (transaction) => {
+      (transaction) => {
       const store = transaction.objectStore(RESTAURANT_STORE);
       // Function to insert a restaurant
       const insertRestaurant = function (restaurant) {
@@ -412,7 +412,7 @@ class DBHelper {
   static selectRestaurantReviews(callback, restaurantId) {
     console.info(`Loading restaurant reviews from database.`);
     DBHelper.doInDatabase('readonly', [REVIEWS_STORE],
-            (transaction) => {
+      (transaction) => {
       // Get the store index
       const index = transaction.objectStore(REVIEWS_STORE).index(BY_RESTAURANT_ID);
       const withoutId = restaurantId === undefined || restaurantId === null;
@@ -440,7 +440,7 @@ class DBHelper {
   static insertRestaurantReviews(reviews) {
     console.info(`Inserting restaurant reviews into database.`);
     DBHelper.doInDatabase('readwrite', [REVIEWS_STORE],
-            (transaction) => {
+      (transaction) => {
       const store = transaction.objectStore(REVIEWS_STORE);
       // Function to insert a restaurant review
       const insertRestaurantReview = function (review) {
@@ -489,24 +489,66 @@ class DBHelper {
    */
   static setFavorite(restaurantId, isFavorite, callback) {
     fetch(`${DBHelper.DATABASE_URL}restaurants/${restaurantId}/?is_favorite=${isFavorite}`, {method: 'PUT'})
-            .then(function (response) {
-              // If response is OK...
-              if (response.status === 200) {
-                // ... return the json promise
-                return response.json();
-              } else {
-                // ... else throw an error to be handled in the catch
-                throw new Error(`Error setting favorite for restaurant with id=${restaurantId}: ${response.status} ${response.statusText}`);
-              }
-            })
-            .then(function (restaurant) {
-              // Signal back the restaurants data
-              callback(null, restaurant);
-            })
-            .catch(function (error) {
-              // Signal back a fetch error
-              callback(error, null);
-            });
+      .then(function (response) {
+        // If response is OK...
+        if (response.status === 200) {
+          // ... return the json promise
+          return response.json();
+        } else {
+          // ... else throw an error to be handled in the catch
+          throw new Error(`Error setting favorite for restaurant with id=${restaurantId}: ${response.status} ${response.statusText}`);
+        }
+      })
+      .then(function (restaurant) {
+        // Signal back the restaurants data
+        callback(null, restaurant);
+      })
+      .catch(function (error) {
+        // Signal back a fetch error
+        callback(error, null);
+      });
+  }
+
+  /**
+   * 
+   * @param {number} restaurantId
+   * @param {string} name
+   * @param {number} rating
+   * @param {string} comment
+   * @param {function(error, review)} callback
+   */
+  static addReview(restaurantId, name, rating, comment, callback) {
+    const review = {
+      restaurant_id: restaurantId,
+      name: name,
+      rating: +rating,  // the '+' converts rating string to number
+      comments: comment
+    };
+    fetch(`${DBHelper.DATABASE_URL}reviews/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(review)
+    })
+      .then(function (response) {
+        // If response is CREATED...
+        if (response.status === 201) {
+          // ... return the json promise
+          return response.json();
+        } else {
+          // ... else throw an error to be handled in the catch
+          throw new Error(`Error adding review for restaurant with id=${restaurantId}: ${response.status} ${response.statusText}`);
+        }
+      })
+      .then(function (review) {
+        // Signal back the restaurants data
+        callback(null, review);
+      })
+      .catch(function (error) {
+        // Signal back a fetch error
+        callback(error, null);
+      });
   }
 
 }
