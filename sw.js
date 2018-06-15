@@ -35,7 +35,8 @@ const STATIC_CACHE = [
   'css/styles.css',
   'js/main.js',
   'js/restaurant_info.js',
-  'js/dbhelper.js'
+  'js/dbhelper.js',
+  'js/common.js'
 ];
 
 /*================================== MAIN ==================================*/
