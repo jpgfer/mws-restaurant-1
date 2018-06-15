@@ -12,9 +12,19 @@ const DEBUG = true;
  * Flag that signals the Service Worker and caching/indexedDB disabled mode
  * @type Boolean
  */
-const SW_AND_CACHE_DISABLED = true;
+const SW_AND_CACHE_DISABLED = false;
 
 /*================================== MAIN ==================================*/
+/**
+ * Listen to online/offline events
+ */
+window.addEventListener('online', (event) => {
+  Util.log('Online ' + navigator.onLine);
+});
+window.addEventListener('offline', (event) => {
+  Util.log('Offline ' + navigator.onLine);
+});
+
 /**
  * Execute operations after DOM content loaded
  */
