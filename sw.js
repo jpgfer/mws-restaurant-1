@@ -3,7 +3,7 @@ const cacheName = 'mws-static-v1';
  * Array of request paths that shall not be cached or are already cached on setup
  * @type Array
  */
-const DO_NOT_CACHE = ['/restaurants.*', '/reviews.*', '/restaurant.html']
+const DO_NOT_CACHE = ['/restaurants.*', '/reviews.*']
 /**
  * Add listener to the 'install' event
  */
