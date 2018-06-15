@@ -24,8 +24,8 @@ registerServiceWorker = () => {
   }
   // Register service worker
   navigator.serviceWorker.register('./sw.js')
-          .then(() => console.log('Service Worker registered.'))
-          .catch((error) => console.log('Service Worker registration failed.', error));
+    .then(() => console.log('Service Worker registered.'))
+    .catch((error) => console.log('Service Worker registration failed.', error));
 };
 
 /**
@@ -239,7 +239,7 @@ createRestaurantHTML = (restaurant) => {
   favorite.type = 'button';
   favorite.title = 'Toggle favorite';
   favorite.onclick = toggleFavorite(restaurant.id);
-  favorite.setAttribute('aria-checked', restaurant.is_favorite);
+  favorite.setAttribute('aria-pressed', restaurant.is_favorite);
   article.append(favorite);
 
   li.append(article);
@@ -253,12 +253,12 @@ createRestaurantHTML = (restaurant) => {
  */
 toggleFavorite = (restaurantId) => {
   return (event) => {
-    const newState = !(event.target.getAttribute('aria-checked') === 'true');
+    const newState = !(event.target.getAttribute('aria-pressed') === 'true');
     DBHelper.setFavorite(restaurantId, newState, (error, restaurant) => {
       if (error) { // Got an error!
         console.error(error);
       } else {
-        event.target.setAttribute('aria-checked', newState);
+        event.target.setAttribute('aria-pressed', newState);
       }
     }
     );

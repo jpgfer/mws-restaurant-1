@@ -167,8 +167,9 @@ nav {
   margin: 0;
   min-height: 380px;
   /* padding: 0 30px 25px;*/
+  padding: 10px;
   text-align: left;
-  margin: 10px 0 0 0;
+  margin: 5px 0 0 0;
   /* Let the li extent to the screen width*/
 }
 #restaurants-list .restaurant-img {
@@ -226,8 +227,8 @@ nav {
   transform: translateY(5px) scale(1.5,1.5);
 }
 /* Favorite state */
-.favorite[aria-checked=true]{
-  color: gold;
+.favorite[aria-pressed=true]{
+  color: #b69000;
 }
 
 /*
@@ -253,6 +254,10 @@ form label {
   flex-wrap: wrap;
   width: 100%;
 }
+.details-col {
+  padding: 0 10px;
+}
+
 .details-col, .info-col {
   /*flex:1;*/
   width: 100%;
@@ -300,9 +305,8 @@ form label {
   width: 100%;
   height: 100%;
 }
-#restaurant-address {
-  font-size: 12pt;
-  margin: 10px 0px;
+#restaurant-other {
+  background-color: #fff;
 }
 #restaurant-cuisine {
   background-color: #333;
@@ -315,6 +319,10 @@ form label {
   text-align: center;
   text-transform: uppercase;
   /*width: 100%;*/
+}
+#restaurant-address {
+  font-size: 12pt;
+  margin: 10px 0px;
 }
 /*#restaurant-container, #reviews-container {
   border-bottom: 1px solid #d9d9d9;
@@ -369,11 +377,12 @@ form label {
 @media screen and (min-width: 640px) and (max-width:960px){
   /* List restaurants in 2 columns */
   #restaurants-list li{
-    width: 50%;
+    width: calc(50% - 10px);
+    padding: 5px;
   }
 
   #restaurant-other {
-    width:50%;
+    width: 50%;
   }
   #restaurant-picture{
     width: 50%;
@@ -384,12 +393,14 @@ form label {
 @media screen and (min-width: 960px) {
   /* List restaurants in 3 columns */
   #restaurants-list li{
-    width: 33.33%;
+    width: calc(33.33% - 10px);
+    padding: 5px;
   }
   /* Since the screen is wide enough, place restaurant info to the left ... */
   #restaurant-container {
     width: 400px;
     order: -2;
+    padding-right: 0;
   }
   #restaurant-picture{
     width: 400px;  /* Just a number near 400px that results in a integer height */
@@ -397,8 +408,9 @@ form label {
   }
   /* ... and map to the right */
   .details #map-container {
-    width: calc(100% - 400px);
+    width: calc(100% - 420px);
     order: -1;
+    padding-left: 0;
   }
   /* Make the map the same height as the restaurant info column */
   .details #map {
