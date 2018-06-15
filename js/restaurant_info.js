@@ -2,28 +2,6 @@ let restaurant;
 var map;
 
 /**
- * TODO: Fill the select elements only when they are expanded
- */
-document.addEventListener('DOMContentLoaded', (event) => {
-  registerServiceWorker();
-});
-
-/**
- * Register service worker
- */
-registerServiceWorker = () => {
-  // Check if service worker is available
-  if (!navigator.serviceWorker) {
-    console.log('Service worker not supported.');
-    return;
-  }
-  // Register service worker
-  navigator.serviceWorker.register('./sw.js')
-    .then(() => console.log('Service Worker registered.'))
-    .catch((error) => console.log('Service Worker registration failed.', error));
-};
-
-/**
  * Initialize Google map, called from HTML.
  */
 window.initMap = () => {

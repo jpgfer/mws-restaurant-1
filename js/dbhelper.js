@@ -398,7 +398,9 @@ class DBHelper {
       if (error) {
         console.info(`Error fetching restaurant from ${restaurantsUrl}.`);
       } else {
-        DBHelper.insertRestaurants(restaurants);
+        if (!SW_AND_CACHE_DISABLED) {
+          DBHelper.insertRestaurants(restaurants);
+        }
       }
       callback(error, restaurants);
     });
@@ -474,7 +476,9 @@ class DBHelper {
       if (error) {
         console.info(`Error fetching restaurant reviews from ${restaurantsReviewsUrl}.`);
       } else {
-        DBHelper.insertRestaurantReviews(reviews);
+        if (!SW_AND_CACHE_DISABLED) {
+          DBHelper.insertRestaurantReviews(reviews);
+        }
       }
       callback(error, reviews);
     });
@@ -550,7 +554,7 @@ class DBHelper {
         callback(error, null);
       });
   }
-  
+
   /**
    * Edit restaurant review
    * @param {number} reviewId

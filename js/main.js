@@ -3,53 +3,12 @@ var map;
 var markers = [];
 
 /**
- * Fetch neighborhoods and cuisines as soon as the page is loaded.
- * TODO: Fill the select elements only when they are expanded
- */
-document.addEventListener('DOMContentLoaded', (event) => {
-  registerServiceWorker();
-  // No longer fetched but filled when the restaurants are retrieved for the first time in initMap function
-  //  getNeighborhoods();
-  //  getCuisines();
-});
-
-/**
- * Register service worker
- */
-registerServiceWorker = () => {
-  // Check if service worker is available
-  if (!navigator.serviceWorker) {
-    console.log('Service worker not supported.');
-    return;
-  }
-  // Register service worker
-  navigator.serviceWorker.register('./sw.js')
-    .then(() => console.log('Service Worker registered.'))
-    .catch((error) => console.log('Service Worker registration failed.', error));
-};
-
-/**
  * Setup restaurants information
  */
 restaurantsSetup = (restaurants) => {
   fillNeighborhoodsHTML(DBHelper.filterNeighborhoods(restaurants));
   fillCuisinesHTML(DBHelper.filterCuisines(restaurants));
 }
-
-/**
- * Fetch all neighborhoods and set their HTML.
- * @deprecated no longer invoked directly
- */
-getNeighborhoods = () => {
-  DBHelper.getNeighborhoods((error, neighborhoods) => {
-    if (error) { // Got an error
-      console.error(error);
-    } else {
-      self.neighborhoods = neighborhoods;
-      fillNeighborhoodsHTML();
-    }
-  });
-};
 
 /**
  * Set neighborhoods HTML.
@@ -61,21 +20,6 @@ fillNeighborhoodsHTML = (neighborhoods = self.neighborhoods) => {
     option.innerHTML = neighborhood;
     option.value = neighborhood;
     select.append(option);
-  });
-};
-
-/**
- * Fetch all cuisines and set their HTML.
- * @deprecated no longer invoked directly
- */
-getCuisines = () => {
-  DBHelper.getCuisines((error, cuisines) => {
-    if (error) { // Got an error!
-      console.error(error);
-    } else {
-      self.cuisines = cuisines;
-      fillCuisinesHTML();
-    }
   });
 };
 
@@ -111,7 +55,6 @@ lazyLoadImages = () => {
           // ... and if so, update the src and srcset information with the ones stored in dataset
           let lazyImage = entry.target;
           lazyImage.src = lazyImage.dataset.src;
-//          lazyImage.srcset = lazyImage.dataset.srcset;
           lazyImage.classList.remove("lazy");
           lazyImageObserver.unobserve(lazyImage);
         }
