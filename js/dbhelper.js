@@ -1,3 +1,50 @@
+/**
+ * Javascript functionality to interact with restaurant data indexDB and server backend
+ * 
+ * Desired workflow:
+ * 
+ * A) The page request data
+ * 1.Y) If the server is online:
+ * 1.Y.1) Fetch the data from the network
+ * 1.Y.1.Y) If fetch is successfull:
+ * 1.Y.1.Y.1) Update database information
+ * 1.Y.1.Y.2) Forward data to page
+ * 1.Y.1.N) If fetch fails:
+ * 1.Y.1.N.1) Load data from database
+ * 1.Y.1.N.2) Forward data to page
+ * 1.N) If the server is offline:
+ * 1.N.1) Load data from database
+ * 1.N.2) Forward data to page
+ * 
+ * B) The page submits data
+ * 1) The database is updated
+ * 2) The page is updated
+ * 3) Check if server online
+ * 3.Y) If the server is online:
+ * 3.Y.1) Submit data to the backend
+ * 3.Y.1.Y) If the submit is successfull:
+ * 3.Y.1.Y.1) Notify user
+ * 3.Y.1.N) If the submit fails:
+ * 3.Y.1.N.1) Notify user
+ * 3.Y.1.N.2) Add submission to resubmission queue
+ * 3.N) If the server is offline:
+ * 3.N.1) Notify user
+ * 3.N.2) Add submission to resubmission queue
+ * 
+ * C) Server is online and becomes offline:
+ * 1) Notify user
+ * 
+ * D) Server is offline and becomes online:
+ * 1) Notify user
+ * 2) For each data to be submitted...
+ * 2.1) Submit data to the backend
+ * 2.1.Y) Submission succeeds:
+ * 2.1.Y.1) Remove data from queue
+ * 2.1.N) Submission fails:
+ * 2.1.N.1) Notify user
+ * 2.1.N.2) Schedule later for resubmission
+ * 
+ */
 /* global indexedDB */
 
 /**
@@ -34,53 +81,27 @@ class DBHelper {
   }
 
   /**
-   * @description Fetch application's data for given URL
-   * @param {string} dataUrl restaurant's data URL
-   * @param {function} callback function with 2 parameters: error string and restaurant data json 
-   */
-  static fetchDataFromUrl(dataUrl, callback) {
-    fetch(dataUrl)
-      .then(function (response) {
-        // If response is OK...
-        if (response.status === 200) {
-          // ... return the json promise
-          return response.json();
-        } else {
-          // ... else throw an error to be handled in the catch
-          throw new Error(`Fetch failed: ${response.status} ${response.statusText}`);
-        }
-      })
-      .then(function (applicationData) {
-        // Signal back the restaurants data
-        callback(null, applicationData);
-      })
-      .catch(function (error) {
-        // Signal back a fetch error
-        callback(error, null);
-      });
-  }
-
-  /**
    * @description Get all restaurants, checking first if they are available offline. 
    * If not, data is fetched from server and stored in indexed DB.
    * @param {function(string,json)} callback to handle the error/restaurant data
    */
   static getAllRestaurants(callback) {
-    DBHelper.selectRestaurants((error, restaurants) => {
-      if (error) {
-        // Log that there was an error retrieving data from db
-        console.info(error);
-      }
-      // If data loaded from database...
-      if (restaurants && restaurants.length > 0) {
-        // ... pass it to the callback
-        callback(null, restaurants);
-      } else {
-        // ... else fetch it and insert into db
-        console.info(`No restaurant data in database. Fetching from server...`);
-        DBHelper.fetchAndInsertRestaurants(DBHelper.DATABASE_URL + 'restaurants', callback);
-      }
-    });
+    // Check online status
+    if (navigator.onLine) {
+      // Fetch from network with fallback to database if failed
+      DBHelper.fetchAndInsertRestaurants(DBHelper.DATABASE_URL + 'restaurants', (error, restaurants) => {
+        if (error) {
+          // If, although online, it fails to fetch from network, then: select from database
+          DBHelper.selectRestaurants(callback);
+        } else {
+          // If no error, then forward to callback
+          callback(error, restaurants);
+        }
+      });
+    } else {
+      // Select from database
+      DBHelper.selectRestaurants(callback);
+    }
   }
 
   /**
@@ -90,21 +111,22 @@ class DBHelper {
    * @param {function(string,json)} callback to handle the error/restaurant data
    */
   static getRestaurantById(id, callback) {
-    DBHelper.selectRestaurants((error, restaurant) => {
-      if (error) {
-        // Log that there was an error retrieving data from db
-        console.info(error);
-      }
-      // If data loaded from database...
-      if (restaurant) {
-        // ... pass it to the callback
-        callback(null, restaurant);
-      } else {
-        // ... else fetch it and insert into db
-        console.info(`No restaurant data in database for id=${id}. Fetching from server...`);
-        DBHelper.fetchAndInsertRestaurants(`${DBHelper.DATABASE_URL}restaurants/${id}`, callback);
-      }
-    }, +id);  // +id --> converts the id string to a number
+    // Check online status
+    if (navigator.onLine) {
+      // Fetch from network with fallback to database if failed
+      DBHelper.fetchAndInsertRestaurants(`${DBHelper.DATABASE_URL}restaurants/${id}`, (error, restaurants) => {
+        if (error) {
+          // If, although online, it fails to fetch from network, then: select from database
+          DBHelper.selectRestaurants(callback, +id);
+        } else {
+          // If no error, then forward to callback
+          callback(error, restaurants);
+        }
+      });
+    } else {
+      // Select from database
+      DBHelper.selectRestaurants(callback, +id);
+    }
   }
 
   /**
@@ -114,57 +136,22 @@ class DBHelper {
    * @param {function(string,json)} callback to handle the error/restaurant data
    */
   static getReviewsByRestaurantId(restaurantId, callback) {
-    DBHelper.selectRestaurantReviews((error, reviews) => {
-      if (error) {
-        // Log that there was an error retrieving data from db
-        console.info(error);
-      }
-      // If data loaded from database...
-      if (reviews && reviews.length > 0) {
-        // ... pass it to the callback
-        callback(null, reviews);
-      } else {
-        // ... else fetch it and insert into db
-        console.info(`No restaurant reviews in database for id=${restaurantId}. Fetching from server...`);
-        DBHelper.fetchAndInsertRestaurantReviews(`${DBHelper.DATABASE_URL}reviews/?restaurant_id=${restaurantId}`, callback);
-      }
-    }, +restaurantId);  // +id --> converts the id string to a number
-  }
-
-  /**
-   * Fetch restaurants by a cuisine type with proper error handling.
-   * TODO: Create cuisine index and use it
-   * @deprecated not used
-   */
-  static getRestaurantByCuisine(cuisine, callback) {
-    // Fetch all restaurants  with proper error handling
-    DBHelper.getAllRestaurants((error, restaurants) => {
-      if (error) {
-        callback(error, null);
-      } else {
-        // Filter restaurants to have only given cuisine type
-        const results = restaurants.filter(r => r.cuisine_type == cuisine);
-        callback(null, results);
-      }
-    });
-  }
-
-  /**
-   * Fetch restaurants by a neighborhood with proper error handling.
-   * TODO: Create neighborhood index and use it
-   * @deprecated not used
-   */
-  static getRestaurantByNeighborhood(neighborhood, callback) {
-    // Fetch all restaurants
-    DBHelper.getAllRestaurants((error, restaurants) => {
-      if (error) {
-        callback(error, null);
-      } else {
-        // Filter restaurants to have only given neighborhood
-        const results = restaurants.filter(r => r.neighborhood == neighborhood);
-        callback(null, results);
-      }
-    });
+    // Check online status
+    if (navigator.onLine) {
+      // Fetch from network with fallback to database if failed
+      DBHelper.fetchAndInsertRestaurantReviews(`${DBHelper.DATABASE_URL}reviews/?restaurant_id=${restaurantId}`, (error, restaurants) => {
+        if (error) {
+          // If, although online, it fails to fetch from network, then: select from database
+          DBHelper.selectRestaurantReviews(callback, +restaurantId);
+        } else {
+          // If no error, then forward to callback
+          callback(error, restaurants);
+        }
+      });
+    } else {
+      // Select from database
+      DBHelper.selectRestaurantReviews(callback, +restaurantId);
+    }
   }
 
   /**
@@ -177,29 +164,14 @@ class DBHelper {
       if (error) {
         callback(error, null);
       } else {
-        let results = restaurants
-        if (cuisine != 'all') { // filter by cuisine
-          results = results.filter(r => r.cuisine_type == cuisine);
+        let results = restaurants;
+        if (cuisine !== 'all') { // filter by cuisine
+          results = results.filter(r => r.cuisine_type === cuisine);
         }
-        if (neighborhood != 'all') { // filter by neighborhood
-          results = results.filter(r => r.neighborhood == neighborhood);
+        if (neighborhood !== 'all') { // filter by neighborhood
+          results = results.filter(r => r.neighborhood === neighborhood);
         }
         callback(null, results);
-      }
-    });
-  }
-
-  /**
-   * Fetch all neighborhoods with proper error handling.
-   * @deprecated only used by a deprecated function
-   */
-  static getNeighborhoods(callback) {
-    // Fetch all restaurants
-    DBHelper.getAllRestaurants((error, restaurants) => {
-      if (error) {
-        callback(error, null);
-      } else {
-        callback(null, DBHelper.filterNeighborhoods(restaurants));
       }
     });
   }
@@ -213,21 +185,6 @@ class DBHelper {
     // Remove duplicates from neighborhoods
     const uniqueNeighborhoods = neighborhoods.filter((v, i) => neighborhoods.indexOf(v) == i);
     return uniqueNeighborhoods;
-  }
-
-  /**
-   * Fetch all cuisines with proper error handling.
-   * @deprecated only used by a deprecated function
-   */
-  static getCuisines(callback) {
-    // Fetch all restaurants
-    DBHelper.getAllRestaurants((error, restaurants) => {
-      if (error) {
-        callback(error, null);
-      } else {
-        callback(null, DBHelper.filterCuisines(restaurants));
-      }
-    });
   }
 
   /**
@@ -267,6 +224,37 @@ class DBHelper {
       animation: google.maps.Animation.DROP}
     );
     return marker;
+  }
+
+  /*********************
+   * UTILITY FUNCTIONS *
+   *********************/
+
+  /**
+   * @description Fetch application's data for given URL
+   * @param {string} dataUrl restaurant's data URL
+   * @param {function} callback function with 2 parameters: error string and restaurant data json 
+   */
+  static fetchDataFromUrl(dataUrl, callback) {
+    fetch(dataUrl)
+      .then(function (response) {
+        // If response is OK...
+        if (response.status === 200) {
+          // ... return the json promise
+          return response.json();
+        } else {
+          // ... else throw an error to be handled in the catch
+          throw new Error(`Fetch failed: ${response.status} ${response.statusText}`);
+        }
+      })
+      .then(function (applicationData) {
+        // Signal back the restaurants data
+        callback(null, applicationData);
+      })
+      .catch(function (error) {
+        // Signal back a fetch error
+        callback(error, null);
+      });
   }
 
   /**
