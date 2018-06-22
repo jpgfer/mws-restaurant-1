@@ -67,7 +67,6 @@ const REVIEWS_STORE = 'reviews';
  * @type String
  */
 const BY_RESTAURANT_ID = 'byRestaurantId';
-
 /**
  * Common database helper functions.
  */
@@ -436,7 +435,7 @@ class DBHelper {
       const insertRestaurantReview = function (review) {
         const request = store.put(review);
         request.onsuccess = function (event) {
-          console.info(event);// event.target.result === customer.ssn;
+          console.info(event); // event.target.result === customer.ssn;
         };
       };
       // Because reviews can be an array or an object
@@ -473,13 +472,74 @@ class DBHelper {
   }
 
   /**
-   * Set the favorite flag of the restaurant
-   * TODO: update also the index DB
+   * Set the favorite status of the restaurant
    * @param {number} restaurantId the restaurant id
    * @param {boolean} isFavorite flag indicating if restaurant is to be favorite/unfavorite
    * @param {function} callback invoked after favorite flag is set 
    */
   static setFavorite(restaurantId, isFavorite, callback) {
+    // Check online status
+    if (navigator.onLine) {
+      // Put to backend, then update database
+      DBHelper.putFavorite(restaurantId, isFavorite, (error, restaurant) => {
+        if (error) {
+          // If, although online, it fails to put to network, then: add to resubmission queue
+          DBHelper.addToResubmissionQueue(restaurantId, isFavorite);
+        }
+        // Update database and forward to callback
+        DBHelper.updateFavorite(restaurantId, isFavorite, callback);
+      });
+    } else {
+      // Add to resubmission queue, then update database
+      DBHelper.addToResubmissionQueue(restaurantId, isFavorite);
+      // Update database and forward to callback
+      DBHelper.updateFavorite(restaurantId, isFavorite, callback);
+    }
+  }
+
+  /**
+   * Update in the database, the favorite status of a restaurant
+   * @param {type} restaurantId
+   * @param {type} isFavorite
+   * @param {type} callback
+   */
+  static updateFavorite(restaurantId, isFavorite, callback) {
+    console.info(`Updating restaurant ${restaurantId} favorite status to ${isFavorite} in database.`);
+    DBHelper.doInDatabase('readwrite', [RESTAURANT_STORE],
+      (transaction) => {
+      const store = transaction.objectStore(RESTAURANT_STORE);
+      // Get restaurant to update...
+      const request = store.get(restaurantId);
+      request.onsuccess = (event) => {
+        const restaurant = event.target.result;
+        // ... if new favorite status is different from old one...
+        if (restaurant.is_favorite !== isFavorite) {
+          // ... set the new favorite status...
+          restaurant.is_favorite = isFavorite;
+          // ... and update the restaurant with the new information in the database
+          const update = store.put(restaurant);
+          update.onsuccess = function (event) {
+            // After update, forward to page
+            callback(null, restaurant);
+          };
+        }
+      };
+    }, (successMessage) => {
+      console.info(`Restaurant ${restaurantId} favorite status updated to ${isFavorite}.`);
+    }, (errorMessage) => {
+      console.info(`Error updating restaurant ${restaurantId} favorite status to ${isFavorite}: ${errorMessage}`);
+    }
+    );
+  }
+
+  /**
+   * Put in the backend the favorite status of a restaurant
+   * @param {type} restaurantId
+   * @param {type} isFavorite
+   * @param {type} callback
+   * @returns {undefined}
+   */
+  static putFavorite(restaurantId, isFavorite, callback) {
     fetch(`${DBHelper.DATABASE_URL}restaurants/${restaurantId}/?is_favorite=${isFavorite}`, {method: 'PUT'})
       .then(function (response) {
         // If response is OK...
@@ -584,4 +644,8 @@ class DBHelper {
       });
   }
 
+  static addToResubmissionQueue(restaurantId, isFavorite) {
+    // TODO: Implement the resubmission queue
+    console.log(`Adding to resubmission queue: restaurantId=${restaurantId}, isFavorite=${isFavorite}`);
+  }
 }
