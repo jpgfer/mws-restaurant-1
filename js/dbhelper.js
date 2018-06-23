@@ -371,6 +371,7 @@ class DBHelper {
       const store = transaction.objectStore(RESTAURANT_STORE);
       // Function to insert a restaurant
       const insertRestaurant = function (restaurant) {
+        restaurant.detached = false;  // When being inserted, the data came from backend so it isn't detacehd
         const request = store.put(restaurant);
         request.onsuccess = function (event) {
           console.info(event);
@@ -440,10 +441,11 @@ class DBHelper {
   /**
    * @description Insert restaurant reviews in the indexed DB
    * @param {type} reviews
+   * @param {type} isDetached
    * @param {type} callback
    * @returns {Function}
    */
-  static insertRestaurantReviews(reviews, callback) {
+  static insertRestaurantReviews(reviews, isDetached, callback) {
     console.info(`Inserting restaurant reviews into database.`);
     DBHelper.doInDatabase('readwrite', [REVIEWS_STORE],
       (transaction) => {
@@ -451,7 +453,9 @@ class DBHelper {
       // Function to insert a restaurant review
       const insertRestaurantReview = function (review) {
         // Guarantee that mandatory fields exists
-        DBHelper.guaranteeFields(review);
+        DBHelper.guaranteeId(review);
+        DBHelper.guaranteeDate(review);
+        review.detached = isDetached;
         const request = store.put(review);
         request.onsuccess = function (event) {
           console.info(event); // event.target.result === customer.ssn;
@@ -474,10 +478,12 @@ class DBHelper {
     );
   }
 
-  static guaranteeFields(review) {
+  static guaranteeId(review) {
     if (!review.id) {
       review.id = 0;
     }
+  }
+  static guaranteeDate(review) {
     if (!review.updatedAt) {
       review.updatedAt = new Date();
     }
@@ -495,7 +501,7 @@ class DBHelper {
         console.info(`Error fetching restaurant reviews from ${restaurantsReviewsUrl}.`);
       } else {
         if (!SW_AND_CACHE_DISABLED) {
-          DBHelper.insertRestaurantReviews(reviews);
+          DBHelper.insertRestaurantReviews(reviews, false);
         }
       }
       callback(error, reviews);
@@ -513,18 +519,12 @@ class DBHelper {
     if (navigator.onLine) {
       // Put to backend, then update database
       DBHelper.putFavorite(restaurantId, isFavorite, (error, restaurant) => {
-        if (error) {
-          // If, although online, it fails to put to network, then: add to resubmission queue
-          DBHelper.addToResubmissionQueue(restaurantId, isFavorite);
-        }
         // Update database and forward to callback
-        DBHelper.updateFavorite(restaurantId, isFavorite, callback);
+        DBHelper.updateFavorite(restaurantId, isFavorite, error ? true : false, callback);
       });
     } else {
-      // Add to resubmission queue, then update database
-      DBHelper.addToResubmissionQueue(restaurantId, isFavorite);
       // Update database and forward to callback
-      DBHelper.updateFavorite(restaurantId, isFavorite, callback);
+      DBHelper.updateFavorite(restaurantId, isFavorite, true, callback);
     }
   }
 
@@ -532,9 +532,10 @@ class DBHelper {
    * Update in the database, the favorite status of a restaurant
    * @param {type} restaurantId
    * @param {type} isFavorite
+   * @param {type} isDetached if true it needs to be resubmitted when back online
    * @param {type} callback
    */
-  static updateFavorite(restaurantId, isFavorite, callback) {
+  static updateFavorite(restaurantId, isFavorite, isDetached, callback) {
     console.info(`Updating restaurant ${restaurantId} favorite status to ${isFavorite} in database.`);
     DBHelper.doInDatabase('readwrite', [RESTAURANT_STORE],
       (transaction) => {
@@ -547,6 +548,7 @@ class DBHelper {
         if (restaurant.is_favorite !== isFavorite) {
           // ... set the new favorite status...
           restaurant.is_favorite = isFavorite;
+          restaurant.detached = isDetached;
           // ... and update the restaurant with the new information in the database
           const update = store.put(restaurant);
           update.onsuccess = function (event) {
@@ -611,21 +613,12 @@ class DBHelper {
     if (navigator.onLine) {
       // Post to backend, then update database
       DBHelper.postReview(newReview, (error, review) => {
-        if (error) {
-          // If, although online, it fails to put to network, then: add to resubmission queue
-          DBHelper.addToResubmissionQueue(newReview, comment);
-          // Update database with review (detached from backend) and forward to callback
-          DBHelper.insertRestaurantReviews(newReview, callback);
-        } else {
-          // Update database with response and forward to callback
-          DBHelper.insertRestaurantReviews(review, callback);
-        }
+        // Update database (with review detached from backend if error) and forward to callback
+        DBHelper.insertRestaurantReviews(newReview, error ? true : false, callback);
       });
     } else {
-      // Add to resubmission queue, then update database
-      DBHelper.addToResubmissionQueue(newReview, comment);
       // Update database and forward to callback
-      DBHelper.insertRestaurantReviews(newReview, callback);
+      DBHelper.insertRestaurantReviews(newReview, true, callback);
     }
   }
 
@@ -671,11 +664,67 @@ class DBHelper {
    * @param {function(error, review)} callback
    */
   static editReview(reviewId, name, rating, comment, callback) {
-    const review = {
+    const newReview = {
       name: name,
       rating: +rating, // the '+' converts rating string to number
       comments: comment
     };
+    // Check online status
+    if (navigator.onLine) {
+      // Put to backend, then update database
+      DBHelper.putReview(reviewId, newReview, (error, review) => {
+        // Update database (with review detached from backend on error) and forward to callback
+        DBHelper.updateReview(reviewId, newReview, error ? true : false, callback);
+      });
+    } else {
+      // Update database and forward to callback
+      DBHelper.updateReview(reviewId, newReview, true, callback);
+    }
+  }
+  /**
+   * Update in the database, an edited restaurant review
+   * @param {type} reviewId
+   * @param {type} review
+   * @param {type} isDetached
+   * @param {type} callback
+   */
+  static updateReview(reviewId, review, isDetached, callback) {
+    console.info(`Updating restaurant review ${reviewId} in database.`);
+    DBHelper.doInDatabase('readwrite', [REVIEWS_STORE],
+      (transaction) => {
+      const index = transaction.objectStore(REVIEWS_STORE).index(BY_ID);
+      // Open cursor to update...
+      const request = index.openCursor(reviewId);
+      request.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (cursor) {
+          // Guarantee that mandatory fields exists
+          DBHelper.guaranteeDate(review);
+          review.detached = isDetached;
+          // ... and update the restaurant with the new information in the database
+          const update = cursor.update(review);
+          update.onsuccess = function (event) {
+            // After update, forward to page
+            callback(null, review);
+          };
+        }
+      };
+    }, (successMessage) => {
+      console.info(`Restaurant review ${reviewId} updated.`);
+    }, (errorMessage) => {
+      console.info(`Error updating restaurant review ${reviewId}: ${errorMessage}`);
+    }
+    );
+  }
+
+  /**
+   * Put in the backend an edited restaurant review
+   * @param {type} reviewId
+   * @param {type} review
+   * @param {type} callback
+   * @returns {undefined}
+   */
+  static putReview(reviewId, review, callback) {
     fetch(`${DBHelper.DATABASE_URL}reviews/${reviewId}`, {
       method: 'PUT',
       headers: {
@@ -701,14 +750,5 @@ class DBHelper {
         // Signal back a fetch error
         callback(error, null);
       });
-  }
-
-  static addToResubmissionQueue(restaurantId, isFavorite) {
-    // TODO: Implement the resubmission queue
-    console.log(`Adding to resubmission queue: restaurantId=${restaurantId}, isFavorite=${isFavorite}`);
-  }
-  static addToResubmissionQueue(review) {
-    // TODO: Implement the resubmission queue (Ideia: all reviews with id=0 are to be resubmitted)
-    console.log(`Adding to resubmission queue: restaurantId=${review.restaurantId}, name=${review.name}`);
   }
 }
