@@ -101,13 +101,14 @@ function resetFields() {
  * @param {type} comment given by the user
  * @returns {Boolean}
  */
-function editReview(reviewId, errorElement, li, name, rating, comment) {
+function editReview(reviewId, errorElement, li, name, rating, comment, isDetached) {
   // Submit to backend
   DBHelper.editReview(
     reviewId,
     name,
     rating,
     comment,
+    isDetached,
     (error, review) => {
     if (error) {
       setError(errorElement, error);
@@ -272,7 +273,7 @@ createReviewHTML = (review) => {
   const editButton = document.createElement('button');
   editButton.innerHTML = 'Edit review';
 //  editButton.className = `edit-button-${review.id}`;
-  editButton.onclick = toggleEditButtonState(review.id, li, name.innerText, rating.innerText.slice(8), comments.innerText);
+  editButton.onclick = toggleEditButtonState(review.id, li, name.innerText, rating.innerText.slice(8), comments.innerText, review.detached);
   li.appendChild(editButton);
 
   return li;
@@ -287,12 +288,12 @@ createReviewHTML = (review) => {
  * @param {type} comment
  * @returns {Function}
  */
-function toggleEditButtonState(reviewId, li, name, rating, comment) {
+function toggleEditButtonState(reviewId, li, name, rating, comment, isDetached) {
   return (event) => {
     const button = event.target;
     if (button.innerText === 'Edit review') {
       button.innerText = 'Cancel';
-      li.appendChild(createEditReviewForm(reviewId, li, name, rating, comment));
+      li.appendChild(createEditReviewForm(reviewId, li, name, rating, comment, isDetached));
     } else {
       button.innerText = 'Edit review';
       li.removeChild(li.lastChild);
@@ -309,7 +310,7 @@ function toggleEditButtonState(reviewId, li, name, rating, comment) {
  * @param {type} comment
  * @returns {Element|createEditReviewForm.form}
  */
-function createEditReviewForm(reviewId, li, name, rating, comment) {
+function createEditReviewForm(reviewId, li, name, rating, comment, isDetached) {
   const form = document.createElement('form');
 
   const nameLabel = document.createElement('label');
@@ -344,7 +345,7 @@ function createEditReviewForm(reviewId, li, name, rating, comment) {
   commentInput.innerText = comment;
   commentLabel.appendChild(commentInput);
   form.appendChild(commentLabel);
-
+  
   const error = document.createElement('p');
 //  error.id = `edit-error-${reviewId}`;
   error.setAttribute('hidden', '');
@@ -357,7 +358,7 @@ function createEditReviewForm(reviewId, li, name, rating, comment) {
   form.appendChild(button);
 
   form.onsubmit = () => {
-    return editReview(reviewId, error, li, nameInput.value, ratingInput.value, commentInput.value);
+    return editReview(reviewId, error, li, nameInput.value, ratingInput.value, commentInput.value, isDetached);
   };
 
   return form;

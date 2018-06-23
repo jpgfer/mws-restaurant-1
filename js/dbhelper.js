@@ -58,15 +58,15 @@ const RESTAURANT_DB = 'restaurants-db';
  */
 const RESTAURANT_STORE = 'restaurant';
 /**
- * The restaurants reviews store name
+ * The restaurant reviews store name
  * @type String
  */
 const REVIEWS_STORE = 'reviews';
 /**
- * The restaurants reviews store index by id
+ * The detached restaurant reviews store name
  * @type String
  */
-const BY_ID = 'byId';
+const DETACHED_REVIEWS_STORE = 'detached_reviews';
 /**
  * The restaurants reviews store index by restaurantId
  * @type String
@@ -278,19 +278,11 @@ class DBHelper {
         case 0:
           upgradeDB.createObjectStore(RESTAURANT_STORE, {keyPath: 'id'});
         case 1:
-//          const reviewsStore = upgradeDB.createObjectStore(REVIEWS_STORE, {keyPath: 'id'});
-//          reviewsStore.createIndex(BY_RESTAURANT_ID, 'restaurant_id');
-        case 2:
-          // Delete previous version of the store
-          try {
-            upgradeDB.deleteObjectStore(REVIEWS_STORE);
-          } catch (error) {
-            // Ignore error
-          }
-          // Create new version
-          const reviewsStore = upgradeDB.createObjectStore(REVIEWS_STORE, {autoIncrement: true});
-          reviewsStore.createIndex(BY_ID, 'id');
+          const reviewsStore = upgradeDB.createObjectStore(REVIEWS_STORE, {keyPath: 'id'});
           reviewsStore.createIndex(BY_RESTAURANT_ID, 'restaurant_id');
+        case 2:
+          const detachedReviewsStore = upgradeDB.createObjectStore(DETACHED_REVIEWS_STORE, {keyPath: 'id', autoIncrement: 'true'});
+          detachedReviewsStore.createIndex(BY_RESTAURANT_ID, 'restaurant_id');
       }
     };
     if (onErrorCallback) {
@@ -411,13 +403,13 @@ class DBHelper {
   }
 
   /**
-   * @description Get restaurant's reviews from DB
+   * @description Get restaurant's reviews from DB (both normal and detached)
    * @param {function} callback function with 2 parameters: error string and restaurant reviews json 
    * @param {string} restaurantId (optional) restaurant's ID or undefined to fetch all restaurants reviews
    */
   static selectRestaurantReviews(callback, restaurantId) {
     console.info(`Loading restaurant reviews from database.`);
-    DBHelper.doInDatabase('readonly', [REVIEWS_STORE],
+    DBHelper.doInDatabase('readonly', [REVIEWS_STORE, DETACHED_REVIEWS_STORE],
       (transaction) => {
       // Get the store index
       const index = transaction.objectStore(REVIEWS_STORE).index(BY_RESTAURANT_ID);
@@ -428,7 +420,15 @@ class DBHelper {
         callback(withoutId ? `Error selecting all restaurants reviews: ${errorEvent}` : `Error selecting reviews for restaurant with id=${restaurantId}: ${errorEvent}`, null);
       };
       request.onsuccess = (successEvent) => {
-        callback(null, successEvent.target.result);
+        const reviews = successEvent.target.result;
+        // Get the detached store index
+        const index = transaction.objectStore(DETACHED_REVIEWS_STORE).index(BY_RESTAURANT_ID);
+        const withoutId = restaurantId === undefined || restaurantId === null;
+        // Do select on detached
+        const request = withoutId ? index.getAll() : index.getAll(restaurantId);
+        request.onsuccess = (successEvent) => {
+          callback(null, reviews.concat(successEvent.target.result));
+        };
       };
     }, (successMessage) => {
       console.info('Restaurant reviews query successfull.');
@@ -447,20 +447,21 @@ class DBHelper {
    */
   static insertRestaurantReviews(reviews, isDetached, callback) {
     console.info(`Inserting restaurant reviews into database.`);
-    DBHelper.doInDatabase('readwrite', [REVIEWS_STORE],
+    const storeName = isDetached ? DETACHED_REVIEWS_STORE : REVIEWS_STORE;
+    DBHelper.doInDatabase('readwrite', [storeName],
       (transaction) => {
-      const store = transaction.objectStore(REVIEWS_STORE);
+      const store = transaction.objectStore(storeName);
       // Function to insert a restaurant review
       const insertRestaurantReview = function (review) {
         // Guarantee that mandatory fields exists
-        DBHelper.guaranteeId(review);
         DBHelper.guaranteeDate(review);
         review.detached = isDetached;
         const request = store.put(review);
         request.onsuccess = function (event) {
           console.info(event); // event.target.result === customer.ssn;
           if (callback) {
-            callback(null, reviews);
+            review.id = event.target.result;
+            callback(null, review);
           }
         };
       };
@@ -478,11 +479,6 @@ class DBHelper {
     );
   }
 
-  static guaranteeId(review) {
-    if (!review.id) {
-      review.id = 0;
-    }
-  }
   static guaranteeDate(review) {
     if (!review.updatedAt) {
       review.updatedAt = new Date();
@@ -614,7 +610,7 @@ class DBHelper {
       // Post to backend, then update database
       DBHelper.postReview(newReview, (error, review) => {
         // Update database (with review detached from backend if error) and forward to callback
-        DBHelper.insertRestaurantReviews(newReview, error ? true : false, callback);
+        DBHelper.insertRestaurantReviews(error ? newReview : review, error ? true : false, callback);
       });
     } else {
       // Update database and forward to callback
@@ -663,22 +659,23 @@ class DBHelper {
    * @param {string} comment
    * @param {function(error, review)} callback
    */
-  static editReview(reviewId, name, rating, comment, callback) {
+  static editReview(reviewId, name, rating, comment, isDetached, callback) {
     const newReview = {
       name: name,
       rating: +rating, // the '+' converts rating string to number
       comments: comment
     };
     // Check online status
+    const storeName = isDetached ? DETACHED_REVIEWS_STORE : REVIEWS_STORE;
     if (navigator.onLine) {
       // Put to backend, then update database
       DBHelper.putReview(reviewId, newReview, (error, review) => {
         // Update database (with review detached from backend on error) and forward to callback
-        DBHelper.updateReview(reviewId, newReview, error ? true : false, callback);
+        DBHelper.updateReview(reviewId, error ? newReview : review, storeName, error ? true : false, callback);
       });
     } else {
       // Update database and forward to callback
-      DBHelper.updateReview(reviewId, newReview, true, callback);
+      DBHelper.updateReview(reviewId, newReview, storeName, true, callback);
     }
   }
   /**
@@ -688,21 +685,25 @@ class DBHelper {
    * @param {type} isDetached
    * @param {type} callback
    */
-  static updateReview(reviewId, review, isDetached, callback) {
+  static updateReview(reviewId, review, storeName, isDetached, callback) {
     console.info(`Updating restaurant review ${reviewId} in database.`);
-    DBHelper.doInDatabase('readwrite', [REVIEWS_STORE],
+    DBHelper.doInDatabase('readwrite', [storeName],
       (transaction) => {
-      const index = transaction.objectStore(REVIEWS_STORE).index(BY_ID);
-      // Open cursor to update...
-      const request = index.openCursor(reviewId);
+      const store = transaction.objectStore(storeName);
+      // Update value...
+      const request = store.openCursor(reviewId);
       request.onsuccess = (event) => {
         const cursor = event.target.result;
         if (cursor) {
           // Guarantee that mandatory fields exists
-          DBHelper.guaranteeDate(review);
-          review.detached = isDetached;
+          const editedReview = cursor.value;
+          editedReview.name = review.name;
+          editedReview.rating = review.rating;
+          editedReview.comments = review.comments;
+          editedReview.updatedAt = review.updatedAt || new Date();
+          editedReview.detached = isDetached;
           // ... and update the restaurant with the new information in the database
-          const update = cursor.update(review);
+          const update = cursor.update(editedReview);
           update.onsuccess = function (event) {
             // After update, forward to page
             callback(null, review);
