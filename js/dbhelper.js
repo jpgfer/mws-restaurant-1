@@ -63,6 +63,11 @@ const RESTAURANT_STORE = 'restaurant';
  */
 const REVIEWS_STORE = 'reviews';
 /**
+ * The restaurants reviews store index by id
+ * @type String
+ */
+const BY_ID = 'byId';
+/**
  * The restaurants reviews store index by restaurantId
  * @type String
  */
@@ -265,7 +270,7 @@ class DBHelper {
    * @param {function} onErrorCallback
    */
   static doInDatabase(mode, storeArray, doInTransaction, onSuccessCallback, onErrorCallback) {
-    const db = indexedDB.open(RESTAURANT_DB, 2);
+    const db = indexedDB.open(RESTAURANT_DB, 3);
     db.onupgradeneeded = (upgradeEvent) => {
       const upgradeDB = upgradeEvent.target.result;
       // Fall through database upgrade pattern
@@ -273,7 +278,18 @@ class DBHelper {
         case 0:
           upgradeDB.createObjectStore(RESTAURANT_STORE, {keyPath: 'id'});
         case 1:
-          const reviewsStore = upgradeDB.createObjectStore(REVIEWS_STORE, {keyPath: 'id'});
+//          const reviewsStore = upgradeDB.createObjectStore(REVIEWS_STORE, {keyPath: 'id'});
+//          reviewsStore.createIndex(BY_RESTAURANT_ID, 'restaurant_id');
+        case 2:
+          // Delete previous version of the store
+          try {
+            upgradeDB.deleteObjectStore(REVIEWS_STORE);
+          } catch (error) {
+            // Ignore error
+          }
+          // Create new version
+          const reviewsStore = upgradeDB.createObjectStore(REVIEWS_STORE, {autoIncrement: true});
+          reviewsStore.createIndex(BY_ID, 'id');
           reviewsStore.createIndex(BY_RESTAURANT_ID, 'restaurant_id');
       }
     };
@@ -424,18 +440,24 @@ class DBHelper {
   /**
    * @description Insert restaurant reviews in the indexed DB
    * @param {type} reviews
+   * @param {type} callback
    * @returns {Function}
    */
-  static insertRestaurantReviews(reviews) {
+  static insertRestaurantReviews(reviews, callback) {
     console.info(`Inserting restaurant reviews into database.`);
     DBHelper.doInDatabase('readwrite', [REVIEWS_STORE],
       (transaction) => {
       const store = transaction.objectStore(REVIEWS_STORE);
       // Function to insert a restaurant review
       const insertRestaurantReview = function (review) {
+        // Guarantee that mandatory fields exists
+        DBHelper.guaranteeFields(review);
         const request = store.put(review);
         request.onsuccess = function (event) {
           console.info(event); // event.target.result === customer.ssn;
+          if (callback) {
+            callback(null, reviews);
+          }
         };
       };
       // Because reviews can be an array or an object
@@ -450,6 +472,15 @@ class DBHelper {
       console.info(`Error inserting restaurant review: ${errorMessage}`);
     }
     );
+  }
+
+  static guaranteeFields(review) {
+    if (!review.id) {
+      review.id = 0;
+    }
+    if (!review.updatedAt) {
+      review.updatedAt = new Date();
+    }
   }
 
   /**
@@ -570,12 +601,40 @@ class DBHelper {
    * @param {function(error, review)} callback
    */
   static addReview(restaurantId, name, rating, comment, callback) {
-    const review = {
+    const newReview = {
       restaurant_id: restaurantId,
       name: name,
       rating: +rating, // the '+' converts rating string to number
       comments: comment
     };
+    // Check online status
+    if (navigator.onLine) {
+      // Post to backend, then update database
+      DBHelper.postReview(newReview, (error, review) => {
+        if (error) {
+          // If, although online, it fails to put to network, then: add to resubmission queue
+          DBHelper.addToResubmissionQueue(newReview, comment);
+          // Update database with review (detached from backend) and forward to callback
+          DBHelper.insertRestaurantReviews(newReview, callback);
+        } else {
+          // Update database with response and forward to callback
+          DBHelper.insertRestaurantReviews(review, callback);
+        }
+      });
+    } else {
+      // Add to resubmission queue, then update database
+      DBHelper.addToResubmissionQueue(newReview, comment);
+      // Update database and forward to callback
+      DBHelper.insertRestaurantReviews(newReview, callback);
+    }
+  }
+
+  /**
+   * Post in the backend a new restaurant review
+   * @param {review} review
+   * @param {function(error, review)} callback
+   */
+  static postReview(review, callback) {
     fetch(`${DBHelper.DATABASE_URL}reviews/`, {
       method: 'POST',
       headers: {
@@ -590,7 +649,7 @@ class DBHelper {
           return response.json();
         } else {
           // ... else throw an error to be handled in the catch
-          throw new Error(`Error adding review for restaurant with id=${restaurantId}: ${response.status} ${response.statusText}`);
+          throw new Error(`Error adding review for restaurant with id=${review.restaurantId}: ${response.status} ${response.statusText}`);
         }
       })
       .then(function (review) {
@@ -647,5 +706,9 @@ class DBHelper {
   static addToResubmissionQueue(restaurantId, isFavorite) {
     // TODO: Implement the resubmission queue
     console.log(`Adding to resubmission queue: restaurantId=${restaurantId}, isFavorite=${isFavorite}`);
+  }
+  static addToResubmissionQueue(review) {
+    // TODO: Implement the resubmission queue (Ideia: all reviews with id=0 are to be resubmitted)
+    console.log(`Adding to resubmission queue: restaurantId=${review.restaurantId}, name=${review.name}`);
   }
 }
