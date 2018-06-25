@@ -1,6 +1,14 @@
 let restaurant;
 var map;
 
+window.addEventListener('online', (event) => {
+  DBHelper.onReconnected(() => {
+    clearReviewsHTML();
+    fillReviews(self.restaurant.id);
+  });
+});
+
+
 /**
  * Initialize Google map, called from HTML.
  */
@@ -186,17 +194,7 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
     fillRestaurantHoursHTML();
   }
   // fill reviews
-  DBHelper.getReviewsByRestaurantId(restaurant.id, (error, reviews) => {
-    if (error) { // Got an error!
-      console.error(error);
-    } else {
-      // Sort reviews by date (descending order, ie, most recent first)
-      reviews = reviews.sort((a, b) => {
-        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-      });
-      fillReviewsHTML(reviews);
-    }
-  });
+  fillReviews(restaurant.id);
 
 };
 
@@ -220,6 +218,36 @@ fillRestaurantHoursHTML = (operatingHours = self.restaurant.operating_hours) => 
 }
 };
 
+fillReviews = (restaurantId) => {
+  DBHelper.getReviewsByRestaurantId(restaurantId, (error, reviews) => {
+    if (error) { // Got an error!
+      console.error(error);
+    } else {
+      // Sort reviews by date (descending order, ie, most recent first)
+      reviews = reviews.sort((a, b) => {
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      });
+      fillReviewsHTML(reviews);
+    }
+  });
+};
+/**
+ * Clear restaurant reviews placeholder
+ */
+clearReviewsHTML = () => {
+  // Remove, if exists, no revies paragraph
+  const noReviews = document.getElementById('no-reviews');
+  if (noReviews) {
+    const container = document.getElementById('reviews-container');
+    container.removeChild(noReviews);
+  }
+  // Remove all reviews (https://siongui.github.io/2012/09/26/javascript-remove-all-children-of-dom-element/)
+  const ul = document.getElementById('reviews-list');
+  while (ul.hasChildNodes()) {
+    ul.removeChild(ul.lastChild);
+  }
+};
+
 /**
  * Create all reviews HTML and add them to the webpage.
  */
@@ -228,6 +256,7 @@ fillReviewsHTML = (reviews = self.restaurant.reviews) => {
 
   if (!reviews) {
     const noReviews = document.createElement('p');
+    noReviews.id = 'no-reviews';
     noReviews.innerHTML = 'No reviews yet!';
     container.appendChild(noReviews);
     return;
@@ -345,7 +374,7 @@ function createEditReviewForm(reviewId, li, name, rating, comment, isDetached) {
   commentInput.innerText = comment;
   commentLabel.appendChild(commentInput);
   form.appendChild(commentLabel);
-  
+
   const error = document.createElement('p');
 //  error.id = `edit-error-${reviewId}`;
   error.setAttribute('hidden', '');

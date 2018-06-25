@@ -451,25 +451,13 @@ class DBHelper {
     DBHelper.doInDatabase('readwrite', [storeName],
       (transaction) => {
       const store = transaction.objectStore(storeName);
-      // Function to insert a restaurant review
-      const insertRestaurantReview = function (review) {
-        // Guarantee that mandatory fields exists
-        DBHelper.guaranteeDate(review);
-        review.detached = isDetached;
-        const request = store.put(review);
-        request.onsuccess = function (event) {
-          console.info(event); // event.target.result === customer.ssn;
-          if (callback) {
-            review.id = event.target.result;
-            callback(null, review);
-          }
-        };
-      };
       // Because reviews can be an array or an object
       if (Array.isArray(reviews)) {
-        reviews.forEach(insertRestaurantReview);
+        reviews.forEach((review) => {
+          DBHelper.insertRestaurantReview(review, isDetached, store, callback);
+        });
       } else {
-        insertRestaurantReview(reviews);
+        DBHelper.insertRestaurantReview(reviews, isDetached, store, callback);
       }
     }, (successMessage) => {
       console.info('Restaurant review inserted.');
@@ -479,7 +467,21 @@ class DBHelper {
     );
   }
 
-  static guaranteeDate(review) {
+  static insertRestaurantReview(review, isDetached, store, callback) {
+    // Guarantee that mandatory fields exists
+    DBHelper.guaranteeDate(review);
+    review.detached = isDetached;
+    const request = store.put(review);
+    request.onsuccess = function (event) {
+      console.info(event); // event.target.result === customer.ssn;
+      if (callback) {
+        review.id = event.target.result;
+        callback(null, review);
+      }
+    };
+  }
+  ;
+    static guaranteeDate(review) {
     if (!review.updatedAt) {
       review.updatedAt = new Date();
     }
@@ -657,6 +659,7 @@ class DBHelper {
    * @param {string} name
    * @param {number} rating
    * @param {string} comment
+   * @param {boolean} isDetached
    * @param {function(error, review)} callback
    */
   static editReview(reviewId, name, rating, comment, isDetached, callback) {
@@ -682,6 +685,7 @@ class DBHelper {
    * Update in the database, an edited restaurant review
    * @param {type} reviewId
    * @param {type} review
+   * @param {type} storeName
    * @param {type} isDetached
    * @param {type} callback
    */
@@ -752,4 +756,85 @@ class DBHelper {
         callback(error, null);
       });
   }
+
+  static onReconnected(onSuccess) {
+    DBHelper.doInDatabase('readwrite', [REVIEWS_STORE, DETACHED_REVIEWS_STORE],
+      (transaction) => {
+      // A - ADD DETACHED REVIEWS
+      // 1) Get reviews 
+      // 2) Post new reviews to backend
+      // 3) Add post response review to REVIEWS_STORE
+      // 4) Remove from DETACHED_REVIEWS_STORE 
+
+      const detachedReviewsStore = transaction.objectStore(DETACHED_REVIEWS_STORE);
+      // 1) Get new reviews 
+      let cursorRequest = detachedReviewsStore.openCursor();
+      cursorRequest.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (cursor) {
+          // Guarantee that mandatory fields exists
+          const detachedReview = {
+            name: cursor.value.name,
+            rating: cursor.value.rating,
+            comments: cursor.value.comments
+          };
+          // 2) Post new reviews to backend
+          DBHelper.postReview(detachedReview, (postError, postedReview) => {
+            if (postError) {
+              console.log(`Error adding detached review to backend: ${postError}`);
+              cursor.continue();  // This add review failed --> go to next one
+            } else {
+              const reviewsStore = transaction.objectStore(REVIEWS_STORE);
+              // 3) Add post response review to REVIEWS_STORE
+              DBHelper.insertRestaurantReview(postedReview, false, transaction.objectStore(REVIEWS_STORE),
+                (error, review) => {
+                if (!error) {
+                  // 4) Remove from DETACHED_REVIEWS_STORE 
+                  cursor.delete();
+                }
+                cursor.continue();
+              });
+            }
+          });
+        }
+      };
+
+      // B - EDIT ATTACHED REVIEWS
+      // 1) Get reviews 
+      // 2) Put edited review in backend
+      // 3) Update post response review in REVIEWS_STORE
+      const reviewsStore = transaction.objectStore(REVIEWS_STORE);
+      // 1) Get edited reviews 
+      cursorRequest = reviewsStore.openCursor();
+      cursorRequest.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (cursor && cursor.value.detached) {
+          // Guarantee that mandatory fields exists
+          const editedReview = {
+            name: cursor.value.name,
+            rating: cursor.value.rating,
+            comments: cursor.value.comments
+          };
+          // 2) Put edited review to backend
+          DBHelper.putReview(cursor.value.id, editedReview, (putError, putReview) => {
+            if (putError) {
+              console.log(`Error editing detached review to backend: ${putError}`);
+            } else {
+              // 3) Update post response review in REVIEWS_STORE
+              cursor.update(putReview);
+            }
+            cursor.continue();  // Fail or success --> go to next one
+          });
+        }
+      };
+
+    }, (successMessage) => {
+      console.info(`Restaurant review defered update successful.`);
+      onSuccess();
+    }, (errorMessage) => {
+      console.info(`Error performing defered restaurant review update: ${errorMessage}`);
+    }
+    );
+  }
+
 }
