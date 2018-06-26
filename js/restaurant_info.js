@@ -2,9 +2,9 @@ let restaurant;
 var map;
 
 window.addEventListener('online', (event) => {
-  DBHelper.onReconnected(() => {
-    clearReviewsHTML();
-    fillReviews(self.restaurant.id);
+  DBHelper.onReconnected((detachedReviewId, newReview) => {
+//    clearReviewsHTML();
+//    fillReviews(self.restaurant.id);
   });
 });
 
