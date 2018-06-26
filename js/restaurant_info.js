@@ -1,10 +1,18 @@
 let restaurant;
 var map;
 
+window.semaphoreCount = 0;
+
 window.addEventListener('online', (event) => {
-  DBHelper.onReconnected((detachedReviewId, newReview) => {
-//    clearReviewsHTML();
-//    fillReviews(self.restaurant.id);
+  DBHelper.onReconnected((semaphoreIncrement) => {
+    console.log(`current: ${semaphoreCount}, increment: ${semaphoreIncrement}`);
+    if (semaphoreIncrement !== 0) { // No need to refresh if nothing to refresh
+      semaphoreCount += semaphoreIncrement;
+      if (semaphoreCount === 0) {
+        clearReviewsHTML();
+        fillReviews(self.restaurant.id);
+      }
+    }
   });
 });
 
@@ -273,6 +281,10 @@ fillReviewsHTML = (reviews = self.restaurant.reviews) => {
  */
 createReviewHTML = (review) => {
   const li = document.createElement('li');
+  // Set auxiliar review information
+  li.dataset.id = review.id;
+  li.dataset.detached = review.detached | 0;
+
   // Review content
   const article = document.createElement('article');
   article.setAttribute('tabindex', '0');
@@ -302,7 +314,7 @@ createReviewHTML = (review) => {
   const editButton = document.createElement('button');
   editButton.innerHTML = 'Edit review';
 //  editButton.className = `edit-button-${review.id}`;
-  editButton.onclick = toggleEditButtonState(review.id, li, name.innerText, rating.innerText.slice(8), comments.innerText, review.detached);
+  editButton.onclick = toggleEditButtonState(li, name.innerText, rating.innerText.slice(8), comments.innerText);
   li.appendChild(editButton);
 
   return li;
@@ -317,12 +329,12 @@ createReviewHTML = (review) => {
  * @param {type} comment
  * @returns {Function}
  */
-function toggleEditButtonState(reviewId, li, name, rating, comment, isDetached) {
+function toggleEditButtonState(li, name, rating, comment) {
   return (event) => {
     const button = event.target;
     if (button.innerText === 'Edit review') {
       button.innerText = 'Cancel';
-      li.appendChild(createEditReviewForm(reviewId, li, name, rating, comment, isDetached));
+      li.appendChild(createEditReviewForm(li, name, rating, comment));
     } else {
       button.innerText = 'Edit review';
       li.removeChild(li.lastChild);
@@ -339,8 +351,10 @@ function toggleEditButtonState(reviewId, li, name, rating, comment, isDetached) 
  * @param {type} comment
  * @returns {Element|createEditReviewForm.form}
  */
-function createEditReviewForm(reviewId, li, name, rating, comment, isDetached) {
+function createEditReviewForm(li, name, rating, comment) {
   const form = document.createElement('form');
+  form.dataset.id = li.dataset.id;
+  form.dataset.detached = li.dataset.detached;
 
   const nameLabel = document.createElement('label');
   nameLabel.innerText = 'Name:';
@@ -387,7 +401,7 @@ function createEditReviewForm(reviewId, li, name, rating, comment, isDetached) {
   form.appendChild(button);
 
   form.onsubmit = () => {
-    return editReview(reviewId, error, li, nameInput.value, ratingInput.value, commentInput.value, isDetached);
+    return editReview(+form.dataset.id, error, li, nameInput.value, ratingInput.value, commentInput.value, +form.dataset.detached);
   };
 
   return form;

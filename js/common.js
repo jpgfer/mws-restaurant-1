@@ -12,7 +12,7 @@ const DEBUG = false;
  * Flag that signals the Service Worker and caching/indexedDB disabled mode
  * @type Boolean
  */
-const SW_AND_CACHE_DISABLED = false;
+const SW_AND_CACHE_DISABLED = true;
 
 /*================================== MAIN ==================================*/
 /**

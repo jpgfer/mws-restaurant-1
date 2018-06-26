@@ -777,12 +777,12 @@ class DBHelper {
       });
   }
 
-  static onReconnected(onSuccess) {
-    DBHelper.deferedAddReviews(onSuccess);
-    DBHelper.deferedEditReviews(onSuccess);
+  static onReconnected(callback) {
+    DBHelper.deferedAddReviews(callback);
+    DBHelper.deferedEditReviews(callback);
   }
 
-  static deferedAddReviews(onSuccess) {
+  static deferedAddReviews(callback) {
     // A - ADD DETACHED REVIEWS
     // 1) Get reviews (1st transaction)
     // 2) Post new reviews to backend
@@ -795,13 +795,15 @@ class DBHelper {
       detachedReviewsRequest.onsuccess = (event) => {
         // By this time the transaction is closed
         const detachedReviews = event.target.result;
+        // Inform that the given amount of reviews have been submitted for defered update
+        callback(detachedReviews.length);
         detachedReviews.forEach((detachedReview) => {
-          DBHelper.deferedAddReview(detachedReview, onSuccess);
+          DBHelper.deferedAddReview(detachedReview, callback);
         });
       };
     });
   }
-  static deferedAddReview(detachedReview, onSuccess) {
+  static deferedAddReview(detachedReview, callback) {
     // Guarantee that mandatory fields exists
     const review = {
       name: detachedReview.name,
@@ -812,9 +814,10 @@ class DBHelper {
     DBHelper.postReview(review, (postError, postedReview) => {
       if (postError) {
         console.log(`Error adding detached review ${detachedReview} to backend: ${postError}`);
+        callback(-1);
       } else {
         // 3) Add post response review to REVIEWS_STORE & 4) Remove from DETACHED_REVIEWS_STORE 
-        DBHelper.deferedInsertRestaurantReview(detachedReview.id, postedReview, onSuccess);
+        DBHelper.deferedInsertRestaurantReview(detachedReview.id, postedReview, callback);
       }
     });
   }
@@ -825,7 +828,7 @@ class DBHelper {
    * @param {type} review
    * @returns {Function}
    */
-  static deferedInsertRestaurantReview(detachedReviewId, review, onSuccess) {
+  static deferedInsertRestaurantReview(detachedReviewId, review, callback) {
     console.info(`Inserting defered restaurant reviews into database.`);
     DBHelper.doInDatabase('readwrite', [DETACHED_REVIEWS_STORE, REVIEWS_STORE],
       (transaction) => {
@@ -838,14 +841,15 @@ class DBHelper {
       detachedStore.delete(detachedReviewId);
     }, (successMessage) => {
       console.info('Defered restaurant review inserted.');
-      onSuccess(detachedReviewId, review);
+      callback(-1);
     }, (errorMessage) => {
       console.info(`Error inserting defered restaurant review: ${errorMessage}`);
+      callback(-1);
     }
     );
   }
 
-  static deferedEditReviews(onSuccess) {
+  static deferedEditReviews(callback) {
     // B - EDIT ATTACHED REVIEWS
     // 1) Get reviews (1st transaction)
     // 2) Put edited review in backend
@@ -857,13 +861,15 @@ class DBHelper {
       detachedReviewsRequest.onsuccess = (event) => {
         // By this time the transaction is closed
         const detachedReviews = event.target.result;
-        detachedReviews.forEach((detachedReview)=>{
-          DBHelper.deferedEditReview(detachedReview, onSuccess);
+        // Inform that the given amount of reviews have been submitted for defered update
+        callback(detachedReviews.length);
+        detachedReviews.forEach((detachedReview) => {
+          DBHelper.deferedEditReview(detachedReview, callback);
         });
       };
     });
   }
-  static deferedEditReview(detachedReview, onSuccess) {
+  static deferedEditReview(detachedReview, callback) {
     // Guarantee that mandatory fields exists
     const review = {
       name: detachedReview.name,
@@ -874,14 +880,15 @@ class DBHelper {
     DBHelper.putReview(detachedReview.id, review, (putError, putReview) => {
       if (putError) {
         console.log(`Error puting detached review ${detachedReview} to backend: ${putError}`);
+        callback(-1);
       } else {
         // 3) Update post response review in REVIEWS_STORE (2nd transaction)
-        DBHelper.deferedUpdateRestaurantReview(putReview, onSuccess);
+        DBHelper.deferedUpdateRestaurantReview(putReview, callback);
       }
     });
   }
 
-  static deferedUpdateRestaurantReview(review, onSuccess) {
+  static deferedUpdateRestaurantReview(review, callback) {
     console.info(`Updating defered restaurant reviews into database.`);
     DBHelper.doInDatabase('readwrite', [REVIEWS_STORE],
       (transaction) => {
@@ -891,9 +898,10 @@ class DBHelper {
       store.put(review);
     }, (successMessage) => {
       console.info('Defered restaurant review updated.');
-      onSuccess(null, review);
+      callback(-1);
     }, (errorMessage) => {
       console.info(`Error updating defered restaurant review: ${errorMessage}`);
+      callback(-1);
     }
     );
   }
