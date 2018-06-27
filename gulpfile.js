@@ -3,6 +3,7 @@ const sass = require('gulp-sass');
 const autoprefixer = require('gulp-autoprefixer');
 const concat = require('gulp-concat');
 const replace = require('gulp-token-replace');
+const minify = require('gulp-minify');
 
 /**
  * HTML tasks
@@ -45,6 +46,12 @@ gulp.task('dist-js', function () {
   // Copy regular js
   return gulp
     .src('js/**/*.js')
+    .pipe(minify({
+      ext: {
+        src: '.js',
+        min: '.min.js'
+      }
+    }))
     .pipe(gulp.dest('./dist/js'));
 });
 // Copy service worker (and others) to dist folder
