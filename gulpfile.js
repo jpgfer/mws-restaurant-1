@@ -4,6 +4,7 @@ const autoprefixer = require('gulp-autoprefixer');
 const concat = require('gulp-concat');
 const replace = require('gulp-token-replace');
 const minify = require('gulp-minify');
+const cleanCSS = require('gulp-clean-css');
 
 /**
  * HTML tasks
@@ -25,6 +26,7 @@ gulp.task('dist-html', function () {
 gulp.task('dist-css', function () {
   return gulp
     .src('css/**/*.css')
+    .pipe(cleanCSS())
     .pipe(gulp.dest('./dist/css'));
 });
 // TODO: For now this task won't be used (postponed to project part 2 or 3)
