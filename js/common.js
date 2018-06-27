@@ -9,10 +9,20 @@
  */
 const DEBUG = false;
 /**
- * Flag that signals the Service Worker and caching/indexedDB disabled mode
+ * Flag that signals the Service Worker and resources caching disabled mode
  * @type Boolean
  */
 const SW_AND_CACHE_DISABLED = true;
+/**
+ * Flag that signals the Indexed DB restaurant caching disabled mode
+ * @type Boolean
+ */
+const RESTAURANTS_CACHE_DISABLED = false;
+/**
+ * Flag that signals the Indexed DB reviews caching disabled mode
+ * @type Boolean
+ */
+const REVIEWS_CACHE_DISABLED = false;
 
 /*================================== MAIN ==================================*/
 /**

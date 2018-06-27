@@ -283,7 +283,7 @@ createReviewHTML = (review) => {
   const li = document.createElement('li');
   // Set auxiliar review information
   li.dataset.id = review.id;
-  li.dataset.detached = review.detached | 0;
+  li.dataset.syncStatus = review.syncStatus | SYNCHRONIZED; // Defaults to synchronized  
 
   // Review content
   const article = document.createElement('article');
@@ -354,7 +354,7 @@ function toggleEditButtonState(li, name, rating, comment) {
 function createEditReviewForm(li, name, rating, comment) {
   const form = document.createElement('form');
   form.dataset.id = li.dataset.id;
-  form.dataset.detached = li.dataset.detached;
+  form.dataset.syncStatus = li.dataset.syncStatus;
 
   const nameLabel = document.createElement('label');
   nameLabel.innerText = 'Name:';
@@ -401,7 +401,7 @@ function createEditReviewForm(li, name, rating, comment) {
   form.appendChild(button);
 
   form.onsubmit = () => {
-    return editReview(+form.dataset.id, error, li, nameInput.value, ratingInput.value, commentInput.value, +form.dataset.detached);
+    return editReview(+form.dataset.id, error, li, nameInput.value, ratingInput.value, commentInput.value, +form.dataset.syncStatus);
   };
 
   return form;

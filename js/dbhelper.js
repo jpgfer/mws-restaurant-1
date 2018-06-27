@@ -76,12 +76,13 @@ const BY_RESTAURANT_ID = 'byRestaurantId';
  * The restaurants reviews store index by detachedFlag
  * @type String
  */
-const BY_DETACHED = 'byDetached';
+const BY_SYNC_STATUS = 'byDetached';
 /**
- * The detached values
+ * The synchronization status values (syncStatus)
  */
-const NOT_DETACHED = 0;
-const DETACHED = 1;
+const SYNCHRONIZED = 0;  // Nothing to sync
+const DIRTY = 1;      // Needs to update backend DB
+const DETACHED = 2;   // Needs to insert into backend
 /**
  * Common database helper functions.
  */
@@ -302,7 +303,7 @@ class DBHelper {
           if (!reviewsStore) {
             reviewsStore = upgradeDB.transaction.objectStore(REVIEWS_STORE);
           }
-          reviewsStore.createIndex(BY_DETACHED, 'detached');
+          reviewsStore.createIndex(BY_SYNC_STATUS, 'syncStatus');
       }
     };
     if (onErrorCallback) {
@@ -374,16 +375,17 @@ class DBHelper {
   /**
    * @description Insert restaurant in the indexed DB
    * @param {type} restaurants
+   * @param {number} syncStatus
    * @returns {Function}
    */
-  static insertRestaurants(restaurants) {
+  static insertRestaurants(restaurants, syncStatus) {
     console.info(`Inserting restaurant data into database.`);
     DBHelper.doInDatabase('readwrite', [RESTAURANT_STORE],
       (transaction) => {
       const store = transaction.objectStore(RESTAURANT_STORE);
       // Function to insert a restaurant
       const insertRestaurant = function (restaurant) {
-        restaurant.detached = NOT_DETACHED;  // When being inserted, the data came from backend so it isn't detacehd
+        restaurant.syncStatus = syncStatus;
         const request = store.put(restaurant);
         request.onsuccess = function (event) {
           console.info(event);
@@ -414,8 +416,8 @@ class DBHelper {
       if (error) {
         console.info(`Error fetching restaurant from ${restaurantsUrl}.`);
       } else {
-        if (!SW_AND_CACHE_DISABLED) {
-          DBHelper.insertRestaurants(restaurants);
+        if (!RESTAURANTS_CACHE_DISABLED) {
+          DBHelper.insertRestaurants(restaurants, SYNCHRONIZED); // When being inserted, the data came from backend so it isn't detacehd
         }
       }
       callback(error, restaurants);
@@ -461,23 +463,23 @@ class DBHelper {
   /**
    * @description Insert restaurant reviews in the indexed DB
    * @param {type} reviews
-   * @param {type} isDetached
+   * @param {number} syncStatus
    * @param {type} callback
    * @returns {Function}
    */
-  static insertRestaurantReviews(reviews, isDetached, callback) {
+  static insertRestaurantReviews(reviews, syncStatus, callback) {
     console.info(`Inserting restaurant reviews into database.`);
-    const storeName = isDetached ? DETACHED_REVIEWS_STORE : REVIEWS_STORE;
+    const storeName = syncStatus === DETACHED ? DETACHED_REVIEWS_STORE : REVIEWS_STORE;
     DBHelper.doInDatabase('readwrite', [storeName],
       (transaction) => {
       const store = transaction.objectStore(storeName);
       // Because reviews can be an array or an object
       if (Array.isArray(reviews)) {
         reviews.forEach((review) => {
-          DBHelper.insertRestaurantReview(review, isDetached, store, callback);
+          DBHelper.insertRestaurantReview(review, syncStatus, store, callback);
         });
       } else {
-        DBHelper.insertRestaurantReview(reviews, isDetached, store, callback);
+        DBHelper.insertRestaurantReview(reviews, syncStatus, store, callback);
       }
     }, (successMessage) => {
       console.info('Restaurant review inserted.');
@@ -487,10 +489,10 @@ class DBHelper {
     );
   }
 
-  static insertRestaurantReview(review, isDetached, store, callback) {
+  static insertRestaurantReview(review, syncStatus, store, callback) {
     // Guarantee that mandatory fields exists
     DBHelper.guaranteeDate(review);
-    review.detached = isDetached;
+    review.syncStatus = syncStatus;
     const request = store.put(review);
     request.onsuccess = function (event) {
       console.info(event); // event.target.result === customer.ssn;
@@ -500,8 +502,8 @@ class DBHelper {
       }
     };
   }
-  ;
-    static guaranteeDate(review) {
+
+  static guaranteeDate(review) {
     if (!review.updatedAt) {
       review.updatedAt = new Date();
     }
@@ -518,9 +520,9 @@ class DBHelper {
       if (error) {
         console.info(`Error fetching restaurant reviews from ${restaurantsReviewsUrl}.`);
       } else {
-//        if (!SW_AND_CACHE_DISABLED) {
-        DBHelper.insertRestaurantReviews(reviews, NOT_DETACHED);
-//        }
+        if (!REVIEWS_CACHE_DISABLED) {
+          DBHelper.insertRestaurantReviews(reviews, SYNCHRONIZED);
+        }
       }
       callback(error, reviews);
     });
@@ -538,11 +540,11 @@ class DBHelper {
       // Put to backend, then update database
       DBHelper.putFavorite(restaurantId, isFavorite, (error, restaurant) => {
         // Update database and forward to callback
-        DBHelper.updateFavorite(restaurantId, isFavorite, error ? DETACHED : NOT_DETACHED, callback);
+        DBHelper.updateFavorite(restaurantId, isFavorite, error ? DIRTY : SYNCHRONIZED, callback);
       });
     } else {
       // Update database and forward to callback
-      DBHelper.updateFavorite(restaurantId, isFavorite, DETACHED, callback);
+      DBHelper.updateFavorite(restaurantId, isFavorite, DIRTY, callback);
     }
   }
 
@@ -550,10 +552,10 @@ class DBHelper {
    * Update in the database, the favorite status of a restaurant
    * @param {type} restaurantId
    * @param {type} isFavorite
-   * @param {type} isDetached if true it needs to be resubmitted when back online
+   * @param {type} syncStatus
    * @param {type} callback
    */
-  static updateFavorite(restaurantId, isFavorite, isDetached, callback) {
+  static updateFavorite(restaurantId, isFavorite, syncStatus, callback) {
     console.info(`Updating restaurant ${restaurantId} favorite status to ${isFavorite} in database.`);
     DBHelper.doInDatabase('readwrite', [RESTAURANT_STORE],
       (transaction) => {
@@ -566,7 +568,7 @@ class DBHelper {
         if (restaurant.is_favorite !== isFavorite) {
           // ... set the new favorite status...
           restaurant.is_favorite = isFavorite;
-          restaurant.detached = isDetached;
+          restaurant.syncStatus = syncStatus;
           // ... and update the restaurant with the new information in the database
           const update = store.put(restaurant);
           update.onsuccess = function (event) {
@@ -632,7 +634,7 @@ class DBHelper {
       // Post to backend, then update database
       DBHelper.postReview(newReview, (error, review) => {
         // Update database (with review detached from backend if error) and forward to callback
-        DBHelper.insertRestaurantReviews(error ? newReview : review, error ? DETACHED : NOT_DETACHED, callback);
+        DBHelper.insertRestaurantReviews(error ? newReview : review, error ? DETACHED : SYNCHRONIZED, callback);
       });
     } else {
       // Update database and forward to callback
@@ -675,30 +677,34 @@ class DBHelper {
 
   /**
    * Edit restaurant review
+   * PS: Doesn't handle the case when it's online and it's editing a detached review
    * @param {number} reviewId
    * @param {string} name
    * @param {number} rating
    * @param {string} comment
-   * @param {boolean} isDetached
+   * @param {boolean} syncStatus
    * @param {function(error, review)} callback
    */
-  static editReview(reviewId, name, rating, comment, isDetached, callback) {
+  static editReview(reviewId, name, rating, comment, syncStatus, callback) {
     const newReview = {
       name: name,
       rating: +rating, // the '+' converts rating string to number
       comments: comment
     };
+    // Which store is the review in?
+    const storeName = syncStatus === DETACHED ? DETACHED_REVIEWS_STORE : REVIEWS_STORE;
+    // If backend sync fails, what will be the new status?
+    const ifFailSyncStatus = syncStatus === DETACHED ? DETACHED : DIRTY;
     // Check online status
-    const storeName = isDetached ? DETACHED_REVIEWS_STORE : REVIEWS_STORE;
     if (navigator.onLine) {
       // Put to backend, then update database
       DBHelper.putReview(reviewId, newReview, (error, review) => {
         // Update database (with review detached from backend on error) and forward to callback
-        DBHelper.updateReview(reviewId, error ? newReview : review, storeName, error ? DETACHED : NOT_DETACHED, callback);
+        DBHelper.updateReview(reviewId, error ? newReview : review, storeName, error ? ifFailSyncStatus : SYNCHRONIZED, callback);
       });
     } else {
       // Update database and forward to callback
-      DBHelper.updateReview(reviewId, newReview, storeName, DETACHED, callback);
+      DBHelper.updateReview(reviewId, newReview, storeName, ifFailSyncStatus, callback);
     }
   }
   /**
@@ -706,10 +712,10 @@ class DBHelper {
    * @param {type} reviewId
    * @param {type} review
    * @param {type} storeName
-   * @param {type} isDetached
+   * @param {type} syncStatus
    * @param {type} callback
    */
-  static updateReview(reviewId, review, storeName, isDetached, callback) {
+  static updateReview(reviewId, review, storeName, syncStatus, callback) {
     console.info(`Updating restaurant review ${reviewId} in database.`);
     DBHelper.doInDatabase('readwrite', [storeName],
       (transaction) => {
@@ -725,12 +731,12 @@ class DBHelper {
           editedReview.rating = review.rating;
           editedReview.comments = review.comments;
           editedReview.updatedAt = review.updatedAt || new Date();
-          editedReview.detached = isDetached;
+          editedReview.syncStatus = syncStatus;
           // ... and update the restaurant with the new information in the database
           const update = cursor.update(editedReview);
           update.onsuccess = function (event) {
             // After update, forward to page
-            callback(null, review);
+            callback(null, editedReview);
           };
         }
       };
@@ -806,6 +812,7 @@ class DBHelper {
   static deferedAddReview(detachedReview, callback) {
     // Guarantee that mandatory fields exists
     const review = {
+      restaurant_id: detachedReview.restaurant_id,
       name: detachedReview.name,
       rating: detachedReview.rating,
       comments: detachedReview.comments
@@ -834,7 +841,7 @@ class DBHelper {
       (transaction) => {
       // 3) Add post response review to REVIEWS_STORE 
       const store = transaction.objectStore(REVIEWS_STORE);
-      review.detached = NOT_DETACHED;
+      review.syncStatus = SYNCHRONIZED;
       store.put(review);
       // 4) Remove from DETACHED_REVIEWS_STORE 
       const detachedStore = transaction.objectStore(DETACHED_REVIEWS_STORE);
@@ -856,8 +863,8 @@ class DBHelper {
     // 3) Update post response review in REVIEWS_STORE (2nd transaction)
     DBHelper.doInDatabase('readonly', [REVIEWS_STORE],
       (transaction) => {
-      // 1) Get detached edited reviews 
-      const detachedReviewsRequest = transaction.objectStore(REVIEWS_STORE).index(BY_DETACHED).getAll(DETACHED);
+      // 1) Get dirty edited reviews 
+      const detachedReviewsRequest = transaction.objectStore(REVIEWS_STORE).index(BY_SYNC_STATUS).getAll(DIRTY);
       detachedReviewsRequest.onsuccess = (event) => {
         // By this time the transaction is closed
         const detachedReviews = event.target.result;
@@ -894,7 +901,7 @@ class DBHelper {
       (transaction) => {
       // 3) Update post response review in REVIEWS_STORE (2nd transaction)
       const store = transaction.objectStore(REVIEWS_STORE);
-      review.detached = NOT_DETACHED;
+      review.syncStatus = SYNCHRONIZED;
       store.put(review);
     }, (successMessage) => {
       console.info('Defered restaurant review updated.');
