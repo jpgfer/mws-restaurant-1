@@ -4,7 +4,7 @@ var map;
 window.semaphoreCount = 0;
 
 window.addEventListener('online', (event) => {
-  DBHelper.onReconnected((semaphoreIncrement) => {
+  DBHelper.onDetailReconnected((semaphoreIncrement) => {
     console.log(`current: ${semaphoreCount}, increment: ${semaphoreIncrement}`);
     if (semaphoreIncrement !== 0) { // No need to refresh if nothing to refresh
       semaphoreCount += semaphoreIncrement;

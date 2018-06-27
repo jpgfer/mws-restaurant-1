@@ -12,7 +12,7 @@ const DEBUG = false;
  * Flag that signals the Service Worker and resources caching disabled mode
  * @type Boolean
  */
-const SW_AND_CACHE_DISABLED = true;
+const SW_AND_CACHE_DISABLED = false;
 /**
  * Flag that signals the Indexed DB restaurant caching disabled mode
  * @type Boolean

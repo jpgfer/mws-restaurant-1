@@ -76,7 +76,7 @@ const BY_RESTAURANT_ID = 'byRestaurantId';
  * The restaurants reviews store index by detachedFlag
  * @type String
  */
-const BY_SYNC_STATUS = 'byDetached';
+const BY_SYNC_STATUS = 'bySyncStatus';
 /**
  * The synchronization status values (syncStatus)
  */
@@ -281,15 +281,16 @@ class DBHelper {
    * @param {function} onErrorCallback
    */
   static doInDatabase(mode, storeArray, doInTransaction, onSuccessCallback, onErrorCallback) {
-    const db = indexedDB.open(RESTAURANT_DB, 4);
+    const db = indexedDB.open(RESTAURANT_DB, 5);
     db.onupgradeneeded = (upgradeEvent) => {
       const upgradeDB = upgradeEvent.target.result;
       let reviewsStore = null;
+      let restaurantStore = null;
       // Fall through database upgrade pattern
       switch (upgradeEvent.oldVersion) {
         case 0:
           // Create a store to place restaurant information
-          upgradeDB.createObjectStore(RESTAURANT_STORE, {keyPath: 'id'});
+          restaurantStore = upgradeDB.createObjectStore(RESTAURANT_STORE, {keyPath: 'id'});
         case 1:
           // Create a store to place restaurant reviews and an index to retrieve them by restaurant id
           reviewsStore = upgradeDB.createObjectStore(REVIEWS_STORE, {keyPath: 'id'});
@@ -299,11 +300,17 @@ class DBHelper {
           const detachedReviewsStore = upgradeDB.createObjectStore(DETACHED_REVIEWS_STORE, {keyPath: 'id', autoIncrement: 'true'});
           detachedReviewsStore.createIndex(BY_RESTAURANT_ID, 'restaurant_id');
         case 3:
-          // Add an index to retrieve reviews by detached flag
+          // Add an index to retrieve reviews by syncStatus
           if (!reviewsStore) {
             reviewsStore = upgradeDB.transaction.objectStore(REVIEWS_STORE);
           }
           reviewsStore.createIndex(BY_SYNC_STATUS, 'syncStatus');
+        case 4:
+          // Add an index to retrieve restaurants by syncStatus
+          if (!restaurantStore) {
+            restaurantStore = upgradeDB.transaction.objectStore(RESTAURANT_STORE);
+          }
+          restaurantStore.createIndex(BY_SYNC_STATUS, 'syncStatus');
       }
     };
     if (onErrorCallback) {
@@ -644,7 +651,7 @@ class DBHelper {
 
   /**
    * Post in the backend a new restaurant review
-   * @param {review} review
+   * @param {restaurant} review
    * @param {function(error, review)} callback
    */
   static postReview(review, callback) {
@@ -783,7 +790,58 @@ class DBHelper {
       });
   }
 
-  static onReconnected(callback) {
+  static onMainReconnected() {
+    DBHelper.deferedEditFavorites();
+  }
+
+  static deferedEditFavorites() {
+    // A - UPDATE RESTAURANT FAVORITE STATUS
+    // 1) Get restaurants (1st transaction)
+    // 2) Put favorite to backend
+    // 3) Update syncStatus (2nd transaction)
+    DBHelper.doInDatabase('readonly', [RESTAURANT_STORE],
+      (transaction) => {
+      // 1) Get restaurants (1st transaction)
+      const restaurantRequest = transaction.objectStore(RESTAURANT_STORE).index(BY_SYNC_STATUS).getAll(DIRTY);
+      restaurantRequest.onsuccess = (event) => {
+        // By this time the transaction is closed
+        const restaurants = event.target.result;
+        restaurants.forEach((restaurant) => {
+          DBHelper.deferedEditFavorite(restaurant);
+        });
+      };
+    });
+  }
+
+  static deferedEditFavorite(restaurant) {
+    // 2) Put favorite to backend
+    DBHelper.putFavorite(restaurant.id, restaurant.is_favorite, (putError, putRestaurant) => {
+      if (putError) {
+        console.log(`Error putting restaurant status ${restaurant} to backend: ${putError}`);
+      } else {
+        // 3) Update syncStatus (2nd transaction)
+        DBHelper.deferedUpdateFavorite(putRestaurant);
+      }
+    });
+  }
+
+  static deferedUpdateFavorite(restaurant) {
+    console.info(`Updating defered restaurant favorite into database.`);
+    DBHelper.doInDatabase('readwrite', [RESTAURANT_STORE],
+      (transaction) => {
+      // 3) Update post response review in REVIEWS_STORE (2nd transaction)
+      const store = transaction.objectStore(RESTAURANT_STORE);
+      restaurant.syncStatus = SYNCHRONIZED;
+      store.put(restaurant);
+    }, (successMessage) => {
+      console.info('Defered restaurant favorite updated.');
+    }, (errorMessage) => {
+      console.info(`Error updating defered restaurant favorite: ${errorMessage}`);
+    }
+    );
+  }
+
+  static onDetailReconnected(callback) {
     DBHelper.deferedAddReviews(callback);
     DBHelper.deferedEditReviews(callback);
   }

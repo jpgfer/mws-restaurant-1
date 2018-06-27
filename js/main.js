@@ -1,6 +1,12 @@
+/* global DBHelper */
+
 let restaurants, neighborhoods, cuisines;
 var map;
 var markers = [];
+
+window.addEventListener('online', (event) => {
+  DBHelper.onMainReconnected();
+});
 
 /**
  * Setup restaurants information
