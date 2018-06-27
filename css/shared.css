@@ -1,0 +1,66 @@
+/* CSS Document */
+
+body{
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10pt;
+  color: #333;
+  line-height: 1.5;
+  margin: 0;
+}
+a {
+  color: orange;
+  text-decoration: none;
+}
+a:hover, a:focus {
+  color: #3397db;
+}
+a img{
+  border: none 0px #fff;
+}
+h1, h2, h3 {
+  margin: 0;
+}
+article, aside, canvas, details, figcaption, figure, footer, header, hgroup, menu, nav, section {
+  display: block;
+}
+/* ====================== Header ====================== */
+header {
+  width: 100%;
+  /*No height specified: let the h1 size it's parent so the text is always vertically centered*/ 
+  background-color: #252831;
+  text-align: center;
+}
+header h1 {
+  color: #fff;
+  font-size: 14pt;
+  font-weight: 200;
+  letter-spacing: 10px;
+  text-transform: uppercase;
+  height: 1.5em;
+  display: inline;
+}
+/* ====================== Main ====================== */
+main {
+  background-color: #f3f3f3;
+}
+/* ====================== Map ====================== */
+#map {
+  height: 100vw;       /* Maintain aspect ratio ... */
+  min-height: 320px;   /* ... with minimum of 320px */  
+  max-height: 525px;   /* ... with maximum of 525px for wide screens. TODO: handle mobile on landscape */
+  width: 100%;
+  background-color: #ccc;
+}
+/* ====================== Footer ====================== */
+footer {
+  background-color: #444;
+  color: #dcdcdc;
+  font-size: 8pt;
+  letter-spacing: 1px;
+  padding: 25px;
+  text-align: center;
+  text-transform: uppercase;
+}
+footer > * {  /* Select all footer direct children */
+  white-space: nowrap;  /* Don't break footer components */
+}

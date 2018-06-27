@@ -7,7 +7,7 @@
  * Flag that signals the debug mode operation
  * @type Boolean
  */
-const DEBUG = false;
+const DEBUG = true;
 /**
  * Flag that signals the Service Worker and resources caching disabled mode
  * @type Boolean

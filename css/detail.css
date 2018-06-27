@@ -1,0 +1,167 @@
+/* ====================== Navigation ====================== */
+nav {
+  width: 100%;
+  /*No height specified: let the h1 size it's parent so the text is always vertically centered */
+  background-color: #252831;
+}
+#breadcrumb {
+  padding: 10px 40px 16px;
+  list-style: none;
+  background-color: #eee;
+  font-size: 17px;
+  margin: 0;
+  text-align: left;
+}
+
+/* Display list items side by side */
+#breadcrumb li {
+  display: inline;
+}
+
+/* Add a slash symbol (/) before/behind each list item */
+#breadcrumb li+li:before {
+  padding: 8px;
+  color: black;
+  content: "/\00a0";
+}
+
+/* Add a color to all links inside the list */
+#breadcrumb li a {
+  color: #054d8c;
+}
+
+/* Add a color on mouse-over */
+#breadcrumb li a:hover {
+  text-decoration: underline;
+}
+/* Enhance the current page link */
+#breadcrumb [aria-current="page"] {
+  font-weight: 700;
+}
+/* ====================== Restaurant Details ====================== */
+/* 
+  Flex containers to hold:
+  Details: restaurant location, info and reviews sections 
+  Info: restaurant name, image and other info
+*/
+.details, .info {
+  display: flex;
+  flex-wrap: wrap;
+  /*width: 100%;*/
+}
+.details-col {
+  padding: 0 10px;
+}
+
+.details-col, .info-col {
+  width: 100%;
+}
+
+#restaurant-name {
+  color: #054d8c;
+  font-family: Arial,sans-serif;
+  font-size: 20pt;
+  font-weight: 200;
+  letter-spacing: 0;
+  margin: 0; /* Old Values: 15px 0 30px;*/
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+#restaurant-picture {
+  max-width: 100%;
+  height: 75vw; /* Assuming all images are 3:2 aspect ratio */
+}
+#restaurant-picture #restaurant-img {
+  width: 100%;
+  height: 100%;
+}
+#restaurant-other {
+  background-color: #fff;
+}
+#restaurant-cuisine {
+  background-color: #333;
+  color: #ddd;
+  font-size: 12pt;
+  font-weight: 300;
+  letter-spacing: 10px;
+  margin: 0 0 20px;
+  padding: 2px 0;
+  text-align: center;
+  text-transform: uppercase;
+}
+#restaurant-address {
+  font-size: 12pt;
+  margin: 10px 0px;
+}
+#reviews-container h2 {
+  color: #054d8c;
+  font-size: 24pt;
+  font-weight: 300;
+  letter-spacing: -1px;
+  padding-bottom: 1pt;
+}
+
+/*
+ * Add review
+ */
+form label {
+  display: block;
+}
+
+#add-error {
+  background-color: #ffffcc;
+  color: red;
+}
+
+#reviews-list {
+  margin: 0;
+  padding: 0;
+}
+#reviews-list li {
+  background-color: #fff;
+  border: 2px solid #f3f3f3;
+  display: block;
+  list-style-type: none;
+  margin: 0 0 30px;
+  overflow: hidden;
+  padding: 0 20px 20px;
+  position: relative;
+}
+#reviews-list li p {
+  margin: 0 0 10px;
+}
+
+/* ====================== Style Breakpoints ====================== */
+@media screen and (min-width: 640px) and (max-width:960px){
+  #restaurant-other {
+    width: 50%;
+  }
+  #restaurant-picture{
+    width: 50%;
+    height: 37.5vw; /* Half the size of the 3:2 aspect ratio */
+  }
+}
+
+@media screen and (min-width: 960px) {
+  /* Since the screen is wide enough, place restaurant info to the left ... */
+  #restaurant-container {
+    width: 400px;
+    order: -2;
+    padding-right: 0;
+  }
+  #restaurant-picture{
+    width: 400px;  /* Just a number near 400px that results in a integer height */
+    height: 300px; /* 2/3 the size of the 405px to keep aspect ratio */
+  }
+  /* ... and map to the right */
+  .details #map-container {
+    width: calc(100% - 420px);
+    order: -1;
+    padding-left: 0;
+  }
+  /* Make the map the same height as the restaurant info column */
+  .details #map {
+    height: 100%;
+    max-height: none;
+  }
+}

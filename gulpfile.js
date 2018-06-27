@@ -22,13 +22,26 @@ gulp.task('dist-html', function () {
 /**
  * CSS tasks
  */
-// Copy css to dist folder
-gulp.task('dist-css', function () {
+// Concatenate common and main css
+gulp.task('dist-css-main', function () {
   return gulp
-    .src('css/**/*.css')
+    .src(['css/shared.css', 'css/main.css'])
+    .pipe(concat('main.css'))
     .pipe(cleanCSS())
     .pipe(gulp.dest('./dist/css'));
 });
+// Concatenate common and detail css
+gulp.task('dist-css-detail', function () {
+  return gulp
+    .src(['css/shared.css', 'css/detail.css'])
+    .pipe(concat('detail.css'))
+    .pipe(cleanCSS())
+    .pipe(gulp.dest('./dist/css'));
+});
+
+// Copy css to dist folder
+gulp.task('dist-css', gulp.parallel('dist-css-main', 'dist-css-detail'));
+
 // TODO: For now this task won't be used (postponed to project part 2 or 3)
 gulp.task('styles', function () {
   return gulp.src('sass/**/*.scss')
