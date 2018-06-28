@@ -5,6 +5,17 @@ const concat = require('gulp-concat');
 const replace = require('gulp-token-replace');
 const minify = require('gulp-minify');
 const cleanCSS = require('gulp-clean-css');
+/**
+ * Inlined CSS in critical path
+ * Sources: 
+ * 1) https://medium.com/@aswin_s/score-a-perfect-100-in-lighthouse-audits-part-1-3199163037
+ * 2) https://stackoverflow.com/a/35553770
+ * Module installed globally (locally was mangling my IDE):
+ * > npm install -g critical
+ * Then linked: 
+ * > npm link critical
+ */
+const critical = require('critical').stream;
 
 /**
  * HTML tasks
@@ -94,17 +105,34 @@ gulp.task('scripts-info', function () {
 });
 
 /**
+ * Critical task
+ */
+// Generate & Inline Critical-path CSS
+gulp.task('critical-main', function () {
+    return gulp.src('dist/index.html')
+        .pipe(critical({base: 'dist/', inline: true, css: ['dist/css/main.css']}))
+        .pipe(gulp.dest('dist'));
+});
+gulp.task('critical-detail', function () {
+    return gulp.src('dist/restaurant.html')
+        .pipe(critical({base: 'dist/', inline: true, css: ['dist/css/detail.css']}))
+        .pipe(gulp.dest('dist'));
+});
+
+gulp.task('critical', gulp.parallel('critical-main', 'critical-detail'));
+
+/**
  * DIST task
  */
-gulp.task('dist', gulp.parallel('dist-html', 'dist-css', 'dist-js', 'dist-sw'));
+gulp.task('dist', gulp.series(gulp.parallel('dist-html', 'dist-css', 'dist-js', 'dist-sw'), 'critical'));
 
 /**
  * Watch task
  */
 gulp.task('watch', function () {
   // Watch for changes in files
-  gulp.watch('*.html', gulp.parallel('dist-html'));
-  gulp.watch('css/**/*.css', gulp.parallel('dist-css'));
+  gulp.watch('*.html', gulp.series('dist-html', 'critical'));
+  gulp.watch('css/**/*.css', gulp.series('dist-css', 'critical'));
   gulp.watch('js/**/*.js', gulp.parallel('dist-js'));
   gulp.watch(['sw.js', 'favicon.ico', 'manifest.json'], gulp.parallel('dist-sw'));
 });
