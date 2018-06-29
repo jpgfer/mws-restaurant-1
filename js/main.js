@@ -8,13 +8,33 @@ window.addEventListener('online', (event) => {
   DBHelper.onMainReconnected();
 });
 
+window.addEventListener('DOMContentLoaded', (event) => {
+  updateRestaurants(restaurantsSetup);
+});
+
+/**
+ * Initialize Google map, called from loadMap().
+ */
+window.initMap = () => {
+  let loc = {
+    lat: 40.722216,
+    lng: -73.987501
+  };
+  self.map = new google.maps.Map(document.getElementById('map'), {
+    zoom: 12,
+    center: loc,
+    scrollwheel: false
+  });
+  addMarkersToMap();
+};
+
 /**
  * Setup restaurants information
  */
 restaurantsSetup = (restaurants) => {
   fillNeighborhoodsHTML(DBHelper.filterNeighborhoods(restaurants));
   fillCuisinesHTML(DBHelper.filterCuisines(restaurants));
-}
+};
 
 /**
  * Set neighborhoods HTML.
@@ -77,22 +97,6 @@ lazyLoadImages = () => {
 };
 
 /**
- * Initialize Google map, called from HTML.
- */
-window.initMap = () => {
-  let loc = {
-    lat: 40.722216,
-    lng: -73.987501
-  };
-  self.map = new google.maps.Map(document.getElementById('map'), {
-    zoom: 12,
-    center: loc,
-    scrollwheel: false
-  });
-  updateRestaurants(restaurantsSetup);
-};
-
-/**
  * Update page and map for current restaurants.
  */
 updateRestaurants = (restaurantsSetupHandler) => {
@@ -129,9 +133,11 @@ resetRestaurants = (restaurants) => {
   const ul = document.getElementById('restaurants-list');
   ul.innerHTML = '';
 
-  // Remove all map markers
-  self.markers.forEach(m => m.setMap(null));
-  self.markers = [];
+  if (self.map) {
+    // Remove all map markers
+    self.markers.forEach(m => m.setMap(null));
+    self.markers = [];
+  }
   self.restaurants = restaurants;
 };
 
@@ -218,12 +224,14 @@ toggleFavorite = (restaurantId) => {
  * Add markers for current restaurants to the map.
  */
 addMarkersToMap = (restaurants = self.restaurants) => {
-  restaurants.forEach(restaurant => {
-    // Add marker to the map
-    const marker = DBHelper.mapMarkerForRestaurant(restaurant, self.map);
-    google.maps.event.addListener(marker, 'click', () => {
-      window.location.href = marker.url;
+  if (self.map) {
+    restaurants.forEach(restaurant => {
+      // Add marker to the map
+      const marker = DBHelper.mapMarkerForRestaurant(restaurant, self.map);
+      google.maps.event.addListener(marker, 'click', () => {
+        window.location.href = marker.url;
+      });
+      self.markers.push(marker);
     });
-    self.markers.push(marker);
-  });
+}
 };

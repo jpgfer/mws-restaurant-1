@@ -3,6 +3,7 @@ const sass = require('gulp-sass');
 const autoprefixer = require('gulp-autoprefixer');
 const concat = require('gulp-concat');
 const replace = require('gulp-token-replace');
+// Command: npm install --save-dev gulp-minify
 const minify = require('gulp-minify');
 const cleanCSS = require('gulp-clean-css');
 /**
@@ -21,11 +22,10 @@ const critical = require('critical').stream;
  * HTML tasks
  */
 // Copy html files to dist folder
+// PS: No longer called since critical copies the correct files
 gulp.task('dist-html', function () {
-  const config = require('./config/config.json');
   return gulp
     .src('*.html')
-    .pipe(replace({global: config}))
     .pipe(gulp.dest('./dist'));
 });
 
@@ -69,9 +69,11 @@ gulp.task('styles', function () {
  */
 // Copy scripts to dist folder
 gulp.task('dist-js', function () {
+  const config = require('./config/config.json');
   // Copy regular js
   return gulp
     .src('js/**/*.js')
+    .pipe(replace({global: config}))
     .pipe(minify({
       ext: {
         src: '.js',
@@ -109,14 +111,14 @@ gulp.task('scripts-info', function () {
  */
 // Generate & Inline Critical-path CSS
 gulp.task('critical-main', function () {
-    return gulp.src('dist/index.html')
-        .pipe(critical({base: 'dist/', inline: true, css: ['dist/css/main.css']}))
-        .pipe(gulp.dest('dist'));
+  return gulp.src('index.html')
+    .pipe(critical({base: 'dist/', inline: true, css: ['dist/css/main.css']}))
+    .pipe(gulp.dest('dist'));
 });
 gulp.task('critical-detail', function () {
-    return gulp.src('dist/restaurant.html')
-        .pipe(critical({base: 'dist/', inline: true, css: ['dist/css/detail.css']}))
-        .pipe(gulp.dest('dist'));
+  return gulp.src('restaurant.html')
+    .pipe(critical({base: 'dist/', inline: true, css: ['dist/css/detail.css']}))
+    .pipe(gulp.dest('dist'));
 });
 
 gulp.task('critical', gulp.parallel('critical-main', 'critical-detail'));
@@ -124,14 +126,15 @@ gulp.task('critical', gulp.parallel('critical-main', 'critical-detail'));
 /**
  * DIST task
  */
-gulp.task('dist', gulp.series(gulp.parallel('dist-html', 'dist-css', 'dist-js', 'dist-sw'), 'critical'));
+gulp.task('dist', gulp.series(gulp.parallel('dist-css', 'dist-js', 'dist-sw'), 'critical'));
 
 /**
  * Watch task
+ * TODO: Optimize for each edited file
  */
 gulp.task('watch', function () {
   // Watch for changes in files
-  gulp.watch('*.html', gulp.series('dist-html', 'critical'));
+  gulp.watch('*.html', gulp.series('critical'));
   gulp.watch('css/**/*.css', gulp.series('dist-css', 'critical'));
   gulp.watch('js/**/*.js', gulp.parallel('dist-js'));
   gulp.watch(['sw.js', 'favicon.ico', 'manifest.json'], gulp.parallel('dist-sw'));

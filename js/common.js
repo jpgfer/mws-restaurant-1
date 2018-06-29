@@ -60,6 +60,38 @@ registerServiceWorker = () => {
 };
 
 /**
+ * Show the map
+ */
+showMap = () => {
+  // Toggle visibility
+  const showMap = document.getElementById('show-map');
+  showMap.style.display = 'none';
+  const mapElement = document.getElementById('map');
+  mapElement.removeAttribute('hidden');
+  // Load map
+  loadMap();
+};
+
+/**
+ * Programatically load the Google Maps API as if it was loaded from the html
+ * Reference: https://stackoverflow.com/a/16839744
+ * @returns {undefined}
+ */
+loadMap = () => {
+  // create a script tag
+  const scriptTag = document.createElement('script');
+  // find the first script tag in the document
+  const firstScriptTag = document.getElementsByTagName('script')[0];
+  // set the async, defer and source of the script to your script
+  scriptTag.async = 1;
+  scriptTag.defer = 1;
+  // Google Maps: real API Key is set during "dist-js" gulp task using 'gulp-token-replace' module
+  scriptTag.src = 'https://maps.googleapis.com/maps/api/js?key={{GOOGLE_API_KEY}}&libraries=places&callback=initMap';
+  firstScriptTag.parentNode.insertBefore(scriptTag, firstScriptTag); // append the script to the DOM
+};
+
+
+/**
  * Utility methods
  */
 class Util {

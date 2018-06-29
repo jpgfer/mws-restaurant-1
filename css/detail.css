@@ -159,8 +159,8 @@ form label {
     order: -1;
     padding-left: 0;
   }
-  /* Make the map the same height as the restaurant info column */
-  .details #map {
+  /* Make the map/button the same height as the restaurant info column */
+  .details #map,.details #show-map {
     height: 100%;
     max-height: none;
   }
